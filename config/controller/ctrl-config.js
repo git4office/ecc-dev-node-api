@@ -3376,6 +3376,38 @@ const addcampusvariable = async (req, res) => {
 }
 
 
+const addequipmentvariable = async (req, res) => {
+
+  console.log(req.originalUrl);
+  dbName = config.databse
+
+
+  equipmentvariabledata = req.body.equipmentvariabledata
+
+  try {
+
+    await sql.connect(config)
+
+    var request = new sql.Request();
+    equipmentVariableQuery = ""
+    for (i = 0; i < equipmentvariabledata.length; i++) {
+      equipmentVariableQuery += "insert into [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation]  (evarid,linkedptid,projectrecordid,equipmentname,evarvalue,dated) values ('" + equipmentvariabledata[i].evarid + "','" + equipmentvariabledata[i].linkedptid + "','" + equipmentvariabledata[i].projectrecordid + "','" + equipmentvariabledata[i].equipmentname + "','" + equipmentvariabledata[i].evarvalue + "', CURRENT_TIMESTAMP);"
+    }
+    await request.query(equipmentVariableQuery)
+
+    sql.close()
+
+    return res.status(200).json({ "status": "success" })
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+
+  }
+
+
+}
+
+
 /*************************************************** END OF TEST API************************************************* */
 
 
@@ -3413,6 +3445,7 @@ module.exports = {
   campusvariable,
   addbuildingvariable,
   addcampusvariable,
+  addequipmentvariable,
   test
 
 }

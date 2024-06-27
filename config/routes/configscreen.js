@@ -10,6 +10,7 @@ const {buildingvariable} = require('../controller/ctrl-config');
 const {campusvariable} = require('../controller/ctrl-config');
 const {addbuildingvariable} = require('../controller/ctrl-config');
 const {addcampusvariable} = require('../controller/ctrl-config');
+const {addequipmentvariable} = require('../controller/ctrl-config');
 
 
 
@@ -44,6 +45,7 @@ router.get('/ecc/v1/buildingvariable',buildingvariable)
 router.get('/ecc/v1/campusvariable',campusvariable)
 router.post('/ecc/v1/addbuildingvariable',addbuildingvariable)
 router.post('/ecc/v1/addcampusvariable',addcampusvariable)
+router.post('/ecc/v1/addequipmentvariable',addequipmentvariable)
 
 
 
