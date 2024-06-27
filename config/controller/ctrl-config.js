@@ -2390,7 +2390,7 @@ const equipmentlist = async (req, res) => {
 
 
 
-const updateproject = (req, res) => {
+const updateproject_27_6_2024 = (req, res) => {
   console.log(req.originalUrl);
 
   dbName = config.databse
@@ -2503,6 +2503,160 @@ const updateproject = (req, res) => {
 
 }
 
+
+const updateproject = async (req, res) => {
+  console.log(req.originalUrl);
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+  recordid = req.query.recordid
+  modifier = req.query.modifier
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+    projectDataSql = "select * from [" + dbName + "].[ECCAnalytics].[Project] where recordid = " + recordid + "; "
+    projectRecordsObj = await request.query(projectDataSql)
+    projectRecordsData = projectRecordsObj['recordsets'][0][0]
+
+    query = "update [" + dbName + "].[ECCAnalytics].[Project]  set ";
+    flag = 0
+    previousRecordData = ""
+    currentRecordData = ""
+    if (typeof req.body.equipmentname !== 'undefined') {
+
+      equipmentname = req.body.equipmentname
+      if (flag == 0) {
+        query += " [equipmentname] = '" + req.body.equipmentname + "'";
+        previousRecordData += projectRecordsData.equipmentname
+        currentRecordData += req.body.equipmentname
+        flag = 1
+      }
+      else {
+        query += ", [equipmentname] = '" + req.body.equipmentname + "'";
+        previousRecordData += ", " + projectRecordsData.equipmentname
+        currentRecordData += ", " + req.body.equipmentname
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,previousrecord,currentrecord,dated) VALUES ('" + modifier + "','" + projectRecordsData.equipmentname + "', '" + recordid + "','update','" + previousRecordData + "','" + currentRecordData + "',CURRENT_TIMESTAMP); "
+      flag = 1
+
+    }
+
+
+    if (typeof req.body.equipmentid !== 'undefined') {
+      equipmentid = req.body.equipmentid
+      if (flag == 0) {
+        query += " [equipmentid] = '" + req.body.equipmentid + "'";
+        previousRecordData += projectRecordsData.equipmentid
+        currentRecordData += req.body.equipmentid
+        flag = 1
+      }
+      else {
+        query += ", [equipmentid] = '" + req.body.equipmentid + "'";
+        previousRecordData += ", " + projectRecordsData.equipmentid
+        currentRecordData += ", " + req.body.equipmentid
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,previousrecord,currentrecord,dated) VALUES ('" + modifier + "','" + projectRecordsData.equipmentname + "', '" + recordid + "','update','" + previousRecordData + "','" + currentRecordData + "',CURRENT_TIMESTAMP); "
+
+    }
+
+    if (typeof req.body.associatedequipid !== 'undefined') {
+      associatedequipid = req.body.associatedequipid
+      if (flag == 0) {
+        query += " [associatedequipid] = '" + req.body.associatedequipid + "'";
+        previousRecordData += projectRecordsData.associatedequipid
+        currentRecordData += req.body.associatedequipid
+        flag = 1
+      }
+      else {
+        query += ", [associatedequipid] = '" + req.body.associatedequipid + "'";
+        previousRecordData += ", " + projectRecordsData.associatedequipid
+        currentRecordData += ", " + req.body.associatedequipid
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,previousrecord,currentrecord,dated) VALUES ('" + modifier + "','" + projectRecordsData.equipmentname + "', '" + recordid + "','update','" + previousRecordData + "','" + currentRecordData + "',CURRENT_TIMESTAMP); "
+
+
+    }
+
+
+    if (typeof req.body.associatedequipdesc !== 'undefined') {
+      associatedequipdesc = req.body.associatedequipdesc
+      if (flag == 0) {
+        query += " [associatedequipdesc] = '" + req.body.associatedequipdesc + "'";
+        previousRecordData += projectRecordsData.associatedequipdesc
+        currentRecordData += req.body.associatedequipdesc
+        flag = 1
+      }
+      else {
+        query += ", [associatedequipdesc] = '" + req.body.associatedequipdesc + "'";
+        previousRecordData += ", " + projectRecordsData.associatedequipdesc
+        currentRecordData += ", " + req.body.associatedequipdesc
+      }
+
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,previousrecord,currentrecord,dated) VALUES ('" + modifier + "','" + projectRecordsData.equipmentname + "', '" + recordid + "','update','" + previousRecordData + "','" + currentRecordData + "',CURRENT_TIMESTAMP); "
+    }
+
+
+
+    if (typeof req.body.equipmentdesc !== 'undefined') {
+      equipmentdesc = req.body.equipmentdesc
+      if (flag == 0) {
+        query += " [equipmentdesc] = '" + req.body.equipmentdesc + "'";
+        previousRecordData += projectRecordsData.equipmentdesc
+        currentRecordData += req.body.equipmentdesc
+        flag = 1
+      }
+      else {
+        query += ", [equipmentdesc] = '" + req.body.equipmentdesc + "'";
+        previousRecordData += ", " + projectRecordsData.equipmentdesc
+        currentRecordData += ", " + req.body.equipmentdesc
+      }
+
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,previousrecord,currentrecord,dated) VALUES ('" + modifier + "','" + projectRecordsData.equipmentname + "', '" + recordid + "','update','" + previousRecordData + "','" + currentRecordData + "',CURRENT_TIMESTAMP); "
+    }
+
+
+    if (typeof req.body.users !== 'undefined') {
+      users = req.body.users
+      if (flag == 0) {
+        query += " [users] = '" + req.body.users + "'";
+        previousRecordData += projectRecordsData.user
+        currentRecordData += req.body.users
+        flag = 1
+      }
+      else {
+        query += ", [users] = '" + req.body.users + "'";
+        previousRecordData += ", " + projectRecordsData.users
+        currentRecordData += ", " + req.body.users
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,previousrecord,currentrecord,dated) VALUES ('" + modifier + "','" + projectRecordsData.equipmentname + "', '" + recordid + "','update','" + previousRecordData + "','" + currentRecordData + "',CURRENT_TIMESTAMP); "
+
+    }
+
+
+    query += " where recordid = '" + recordid + "'";
+
+
+    query += updateprojectaudit_query
+
+    records = await request.query(query)
+    return res.status(500).json('success');
+
+  } catch (err) {
+    console.error(err);
+    console.error(deletequery);
+    return res.status(500).json('failed');
+
+  } finally {
+
+    pool.close();
+
+
+  }
+
+
+}
 
 const getdatapointsforconfig = (req, res) => {
   console.log(req.originalUrl);
