@@ -201,7 +201,7 @@ const projview = (req, res) => {
 
 
 
-const deleteproject = (req, res) => {
+const deleteproject_27_6_2024 = (req, res) => {
   console.log(req.originalUrl)
 
   deleteproject_query = ""
@@ -330,6 +330,160 @@ const deleteproject = (req, res) => {
 
 }
 
+const deleteproject = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+  modifier = req.query.modifier
+  equipmentname = req.query.eq
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+    deleteproject_query = ""
+    if (typeof req.query.cn !== 'undefined') {
+
+      query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
+      query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "')); "
+      query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "'); "
+
+      query3 = " delete  FROM [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "'";
+
+      deleteproject_query = query1 + query2 + query3;
+
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for(count = 0; count < projectData['recordsets'][0].length; count++){
+        equipmentName += projectData['recordsets'][0][count].equipmentname+", "
+        projectRecordId += projectData['recordsets'][0][count].recordid+", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
+
+    }
+
+    if (typeof req.query.ct !== 'undefined') {
+
+      query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
+      query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "')); "
+      query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "'); "
+
+      query3 = " delete  FROM [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "'";
+
+      deleteproject_query = query1 + query2 + query3;
+
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for(count = 0; count < projectData['recordsets'][0].length; count++){
+        equipmentName += projectData['recordsets'][0][count].equipmentname+", "
+        projectRecordId += projectData['recordsets'][0][count].recordid+", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
+
+
+    }
+
+    if (typeof req.query.cm !== 'undefined') {
+
+      query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
+      query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "')); "
+      query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "'); "
+
+      query3 = " delete  FROM [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "'";
+
+      deleteproject_query = query1 + query2 + query3;
+
+
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for(count = 0; count < projectData['recordsets'][0].length; count++){
+        equipmentName += projectData['recordsets'][0][count].equipmentname+", "
+        projectRecordId += projectData['recordsets'][0][count].recordid+", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
+
+    }
+
+    if (typeof req.query.bl !== 'undefined') {
+
+      query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
+      query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "')); "
+      query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "'); "
+
+      query3 = " delete  FROM [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "'";
+
+      deleteproject_query = query1 + query2 + query3;
+
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for(count = 0; count < projectData['recordsets'][0].length; count++){
+        equipmentName += projectData['recordsets'][0][count].equipmentname+", "
+        projectRecordId += projectData['recordsets'][0][count].recordid+", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
+
+    }
+
+
+    if (typeof req.query.eq !== 'undefined') {
+
+      query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
+      query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "')); "
+      query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "'); "
+
+      query3 = " delete  FROM [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "'";
+
+      deleteproject_query = query1 + query2 + query3;
+
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "'";
+      projectData = await request.query(projectDetailSQL)
+      projectrecordid = projectData['recordsets'][0][0].recordid
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + projectrecordid + "','delete',CURRENT_TIMESTAMP); "
+
+
+    }
+
+
+
+    deleteproject_query += updateprojectaudit_query;
+    console.log(deleteproject_query)
+    await request.query(deleteproject_query)
+
+    return res.status(200).json('success')
+
+  } catch (err) {
+    console.error(err);
+    console.error(deleteproject_query);
+    return res.status(500).json('failed');
+
+  } finally {
+
+    pool.close();
+
+
+  }
+
+
+}
 
 
 
