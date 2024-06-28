@@ -3311,7 +3311,7 @@ const campusvariable = async (req, res) => {
 }
 
 
-const addbuildingvariable = async (req, res) => {
+const addbuildingvariableoperation = async (req, res) => {
 
   console.log(req.originalUrl);
   dbName = config.databse
@@ -3325,10 +3325,14 @@ const addbuildingvariable = async (req, res) => {
 
     var request = new sql.Request();
     buildingQuery = ""
+    auditQuery = ""
     for (i = 0; i < buildingvariabledata.length; i++) {
 
       buildingQuery += "insert into [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation]  (bvarid,buildingname,bvarvalue,dated) values ('" + buildingvariabledata[i].bvarid + "','" + buildingvariabledata[i].buildingname + "','" + buildingvariabledata[i].bvarvalue + "', CURRENT_TIMESTAMP)"
+      auditQuery += " INSERT INTO [" + dbName + "].ECCAnalytics.BuildingVarOperationAudit (bvarid,buildingname,event,currentrecord,dated) VALUES ('" + buildingvariabledata[i].bvarid + "','" + buildingvariabledata[i].buildingname + "', 'add','" + buildingvariabledata[i].bvarvalue + "',CURRENT_TIMESTAMP); "
+
     }
+    buildingQuery +=auditQuery
     await request.query(buildingQuery)
 
     sql.close()
@@ -3344,7 +3348,7 @@ const addbuildingvariable = async (req, res) => {
 }
 
 
-const addcampusvariable = async (req, res) => {
+const addcampusvariableoperation = async (req, res) => {
 
   console.log(req.originalUrl);
   dbName = config.databse
@@ -3358,9 +3362,12 @@ const addcampusvariable = async (req, res) => {
 
     var request = new sql.Request();
     campusQuery = ""
+    auditQuery = ""
     for (i = 0; i < campusvariabledata.length; i++) {
       campusQuery += "insert into [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation]  (cvarid,campusname,cvarvalue,dated) values ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "','" + campusvariabledata[i].cvarvalue + "', CURRENT_TIMESTAMP);"
+      auditQuery += " INSERT INTO [" + dbName + "].ECCAnalytics.CampusVarOperationAudit (cvarid,campusname,event,currentrecord,dated) VALUES ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "', 'add','" + campusvariabledata[i].cvarvalue + "',CURRENT_TIMESTAMP); "
     }
+    campusQuery += auditQuery
     await request.query(campusQuery)
 
     sql.close()
@@ -3376,7 +3383,7 @@ const addcampusvariable = async (req, res) => {
 }
 
 
-const addequipmentvariable = async (req, res) => {
+const addequipmentvariableopration = async (req, res) => {
 
   console.log(req.originalUrl);
   dbName = config.databse
@@ -3408,6 +3415,162 @@ const addequipmentvariable = async (req, res) => {
 }
 
 
+
+const updatequipmentvariableoperation = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+
+  recordid = req.query.id
+  modifier = req.body.modifier
+  evarvalue = req.body.evarvalue
+
+  updateuser_query = ""
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+
+    previousValSql = " select * from [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where  recordid = " + recordid + "; "
+    console.log(previousValSql);
+//return 0;
+    records = await request.query(previousValSql)
+    prevEvarval = records['recordsets'][0][0].evarvalue
+    evarid = records['recordsets'][0][0].evarid
+    equipmentname = records['recordsets'][0][0].equipmentname
+    linkedptid = records['recordsets'][0][0].linkedptid
+
+    updateuser_query = " update [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation]  set evarvalue = '" + evarvalue + "' where recordid = '" + recordid + "'; ";
+
+
+    //insertQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.UserAudit (userid,event,previousrecord,currentrecord,dated) VALUES ('" + username + "','update','" + prevEvarval + "','" + evarvalue + "',CURRENT_TIMESTAMP); "
+    auditQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.EquipmentVarOperationAudit (evarid,equipmentname,linkedptid,event,previousrecord,currentrecord,dated) VALUES ('" + evarid + "','" + equipmentname + "', '" + linkedptid + "','update','" + prevEvarval + "','" + evarvalue + "',CURRENT_TIMESTAMP); "
+
+    updateuser_query += auditQuery 
+    console.log(updateuser_query);
+
+    await request.query(updateuser_query)
+    return res.status(200).json('success')
+
+  } catch (err) {
+    console.error(err);
+    console.log(updateuser_query);
+    return res.status(500).json('failed');
+
+  } finally {
+
+    pool.close();
+
+
+  }
+
+
+}
+
+const updatebuildingvariableoperation = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+
+  recordid = req.query.id
+  modifier = req.body.modifier
+  bvarvalue = req.body.bvarvalue
+
+  updateuser_query = ""
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+
+    previousValSql = " select * from [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] where  recordid = " + recordid + "; "
+    console.log(previousValSql);
+//return 0;
+    records = await request.query(previousValSql)
+    prevBvarval = records['recordsets'][0][0].bvarvalue
+    bvarid = records['recordsets'][0][0].bvarid
+    buildingname = records['recordsets'][0][0].buildingname
+
+    updateuser_query = " update [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation]  set bvarvalue = '" + bvarvalue + "' where recordid = '" + recordid + "'; ";
+
+
+    //insertQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.UserAudit (userid,event,previousrecord,currentrecord,dated) VALUES ('" + username + "','update','" + prevEvarval + "','" + evarvalue + "',CURRENT_TIMESTAMP); "
+    auditQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.BuildingVarOperationAudit (bvarid,buildingname,event,previousrecord,currentrecord,dated) VALUES ('" + bvarid + "','" + buildingname + "', 'update','" + prevBvarval + "','" + bvarvalue + "',CURRENT_TIMESTAMP); "
+
+    updateuser_query += auditQuery 
+    console.log(updateuser_query);
+
+    await request.query(updateuser_query)
+    return res.status(200).json('success')
+
+  } catch (err) {
+    console.error(err);
+    console.log(updateuser_query);
+    return res.status(500).json('failed');
+
+  } finally {
+
+    pool.close();
+
+
+  }
+
+
+}
+
+
+const updatecampusvariableoperation = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+
+  recordid = req.query.id
+  modifier = req.body.modifier
+  cvarvalue = req.body.cvarvalue
+
+  updateuser_query = ""
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+
+    previousValSql = " select * from [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] where  recordid = " + recordid + "; "
+    console.log(previousValSql);
+    records = await request.query(previousValSql)
+    prevCvarval = records['recordsets'][0][0].cvarvalue
+    cvarid = records['recordsets'][0][0].cvarid
+    campusname = records['recordsets'][0][0].campusname
+
+    updatcampus_query = " update [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation]  set cvarvalue = '" + cvarvalue + "' where recordid = '" + recordid + "'; ";
+
+
+    auditQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.CampusVarOperationAudit (cvarid,campusname,event,previousrecord,currentrecord,dated) VALUES ('" + cvarid + "','" + campusname + "', 'update','" + prevCvarval + "','" + cvarvalue + "',CURRENT_TIMESTAMP); "
+
+    updatcampus_query += auditQuery 
+    console.log(updatcampus_query);
+
+    await request.query(updatcampus_query)
+    return res.status(200).json('success')
+
+  } catch (err) {
+    console.error(err);
+    console.log(updateuser_query);
+    return res.status(500).json('failed');
+
+  } finally {
+
+    pool.close();
+
+
+  }
+
+
+}
 /*************************************************** END OF TEST API************************************************* */
 
 
@@ -3443,9 +3606,12 @@ module.exports = {
   updateuserpassword,
   buildingvariable,
   campusvariable,
-  addbuildingvariable,
-  addcampusvariable,
-  addequipmentvariable,
+  addbuildingvariableoperation,
+  addcampusvariableoperation,
+  addequipmentvariableopration,
+  updatequipmentvariableoperation,
+  updatebuildingvariableoperation,
+  updatecampusvariableoperation,
   test
 
 }
