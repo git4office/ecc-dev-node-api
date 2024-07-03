@@ -9,11 +9,13 @@ const {addequipment,equipmentlist,updateproject,getdatapointsforconfig,updatedat
 const {buildingvariable} = require('../controller/ctrl-config');
 const {campusvariable} = require('../controller/ctrl-config');
 const {addbuildingvariableoperation} = require('../controller/ctrl-config');
-const {addcampusvariableoperation} = require('../controller/ctrl-config');
+const {addcampusvariableoperation,deletecampusvariableoperation} = require('../controller/ctrl-config');
 const {addequipmentvariableopration} = require('../controller/ctrl-config');
 const {updatecampusvariableoperation} = require('../controller/ctrl-config');
 const {updatebuildingvariableoperation} = require('../controller/ctrl-config');
 const {updatequipmentvariableoperation} = require('../controller/ctrl-config');
+const {deletebuildingvariableoperation} = require('../controller/ctrl-config');
+const {equipmentvariable} = require('../controller/ctrl-config');
 
 
 
@@ -47,17 +49,14 @@ router.put('/ecc/v1/updateuserpassword',updateuserpassword)
 router.get('/ecc/v1/buildingvariable',buildingvariable)
 router.get('/ecc/v1/campusvariable',campusvariable)
 router.post('/ecc/v1/addbuildingvariableoperation',addbuildingvariableoperation)
-router.post('/ecc/v1/addcampusvariable',addcampusvariableoperation)
+router.post('/ecc/v1/addcampusvariableoperation',addcampusvariableoperation)
 router.post('/ecc/v1/addequipmentvariableopration',addequipmentvariableopration)
 router.put('/ecc/v1/updatequipmentvariableoperation',updatequipmentvariableoperation)
 router.put('/ecc/v1/updatebuildingvariableoperation',updatebuildingvariableoperation)
 router.put('/ecc/v1/updatecampusvariableoperation',updatecampusvariableoperation)
-
-
-
-
-
-
+router.delete('/ecc/v1/deletebuildingvariableoperation',deletebuildingvariableoperation)
+router.delete('/ecc/v1/deletecampusvariableoperation',deletecampusvariableoperation)
+router.get('/ecc/v1/equipmentvariable',equipmentvariable)
 
 
 
