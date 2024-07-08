@@ -22,7 +22,7 @@ var config = {
 
 
 
-const login_6_7_2024 = (req, res) => {
+const login = (req, res) => {
   //ruleid = req.body.ruleid
   console.log(req.originalUrl)
 
@@ -84,55 +84,8 @@ const login_6_7_2024 = (req, res) => {
   })
 }
 
-const login = async (req, res) => {
-  //ruleid = req.body.ruleid
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
 
-  username = req.body.uid
-  password = req.body.pass
-
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    var data = [];
-    login_query = "SELECT * FROM [" + dbName + "].ECCAnalytics.Users where username COLLATE SQL_Latin1_General_CP1_CS_AS ='" + username + "' and pswd COLLATE SQL_Latin1_General_CP1_CS_AS ='" + password + "'"
-    records = await request.query(login_query)
-
-
-    if (records['recordsets'][0].length != 0) {
-
-      if (records['recordsets'][0][0].configloginstatus == 1 && records['recordsets'][0][0].roles != 'MasterAdmin') {
-        data = { 'status': 'Already loggedin' }
-        return res.status(200).json(data)
-      } else {
-        data = { 'userid': records['recordsets'][0][0].userid, 'mailid': records['recordsets'][0][0].useremailid, 'roles': records['recordsets'][0][0].roles, 'loginstatus': records['recordsets'][0][0].loginstatus, 'accexpire': records['recordsets'][0][0].accexpire }
-        console.log(records['recordsets'][0][0].username)
-        //------------------------
-        let updateQuery = "update [" + dbName + "].ECCAnalytics.Users set [configloginstatus] = 1 where  username ='" + username + "';"
-        updateQuery += "insert into [" + dbName + "].ECCAnalytics.UserLog ([username],[userrole],[logintime],app) values ('" + username + "','" + records['recordsets'][0][0].roles + "', CURRENT_TIMESTAMP,1);"
-        await request.query(updateQuery)
-        return res.status(200).json(data)
-
-      }
-    }
-    else {
-      data = { 'status': 'No Data Found' }
-      return res.status(200).json(data)
-    }
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-}
-
-
-const logout_6_7_2024 = (req, res) => {
+const logout = (req, res) => {
   dbName = config.databse
   username = req.query.uid
   console.log(req.originalUrl)
@@ -162,33 +115,6 @@ const logout_6_7_2024 = (req, res) => {
     )
   })
 }
-
-const logout = async (req, res) => {
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-  username = req.query.uid
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    var data = [];
-    query = "update [" + dbName + "].ECCAnalytics.Users set [configloginstatus] = 0 where  username  COLLATE SQL_Latin1_General_CP1_CS_AS ='" + username + "';"
-    query += "update  [" + dbName + "].ECCAnalytics.UserLog set [logouttime] = CURRENT_TIMESTAMP where  username  COLLATE SQL_Latin1_General_CP1_CS_AS ='" + username + "' and [app] = 1 and logouttime IS NULL;"
-    await request.query(query)
-
-    console.log(query);
-    return res.status(200).json({ "status": "success" })
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-}
-
 
 
 const closealarm = (req, res) => {
@@ -231,48 +157,7 @@ const closealarm = (req, res) => {
 
 
 
-const projview_2_7_2024 = (req, res) => {
-  //ruleid = req.body.ruleid
-  dbName = config.databse
-  console.log(req.originalUrl)
-
-
-  sql.connect(config, function (err) {
-    if (err) conole.log(err)
-
-    // make a request as
-
-    var request = new sql.Request();
-
-    //make the query
-
-    //var query = "SELECT [buildingname] as building FROM [ECCDB].[ECCAnalytics].[Buildings]"
-    //projview_query = "SELECT [recordid] ,[projname],[projdesc],[countryname],[countrydesc],[cityname],[citydesc],[campusname],[campusdesc],[buildingname],[buildingdesc],[equipmentname],[equipmentid],[associatedequipid],[associatedequipdesc],[users]  FROM ["+dbName+"].[ECCAnalytics].[Project]"
-    projview_query = "SELECT [Project].[recordid] ,[projname],[projdesc],[countryname],[countrydesc],[cityname],[citydesc],[Project].[campusname],[campusdesc],[buildingname],[buildingdesc],[equipmentname],[equipmentid],[associatedequipid],[associatedequipdesc],[users],[CampusScale].[campusscale]  FROM [" + dbName + "].[ECCAnalytics].[Project] left join [" + dbName + "].[ECCAnalytics].[CampusScale] on [Project].[campusname] = [CampusScale].[campusname]"
-    request.query(projview_query, function (err, records) {
-      if (err)
-        console.log(err);
-      else {
-        console.log(projview_query);
-        //res.send(records['recordsets'][0]);
-        //  your out put as records  
-        // return res.status(200).json(records['recordsets'][0])
-        var data = [];
-        for (var i = 0; i < records['recordsets'][0].length; i++) {
-          data.push({ recordid: records['recordsets'][0][i]['recordid'], projname: records['recordsets'][0][i]['projname'], projdesc: records['recordsets'][0][i]['projdesc'], countryname: records['recordsets'][0][i]['countryname'], countrydesc: records['recordsets'][0][i]['countrydesc'], cityname: records['recordsets'][0][i]['cityname'], citydesc: records['recordsets'][0][i]['citydesc'], campusname: records['recordsets'][0][i]['campusname'], campusdesc: records['recordsets'][0][i]['campusdesc'], buildingname: records['recordsets'][0][i]['buildingname'], buildingdesc: records['recordsets'][0][i]['buildingdesc'], equipmentname: records['recordsets'][0][i]['equipmentname'], equipmentid: records['recordsets'][0][i]['equipmentid'], associatedequipid: records['recordsets'][0][i]['associatedequipid'], associatedequipdesc: records['recordsets'][0][i]['associatedequipdesc'], campuscale: records['recordsets'][0][i]['campusscale'] });
-          //DATA.    ({'recordid': row[0],'projname': row[1],'projdesc' : row[2],'countryname' : row[3],'countrydesc' : row[4],'cityname' : row[5],'citydesc' : row[6],'campusname' : row[7],'campusdesc' : row[8],'buildingname' : row[9],'buildingdesc' : row[10],'equipmentname' : row[11],'equipmenttype' : row[12],'subequipmentname' : row[13],'subequipmentdesc' : row[14]})
-        }
-
-        return res.status(200).json(data)
-      }
-
-    }
-
-    )
-  })
-}
-
-const projview_6_7_2024 = (req, res) => {
+const projview = (req, res) => {
   //ruleid = req.body.ruleid
   dbName = config.databse
   console.log(req.originalUrl)
@@ -313,276 +198,9 @@ const projview_6_7_2024 = (req, res) => {
   })
 }
 
-const projview = async (req, res) => {
-  //ruleid = req.body.ruleid
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
 
 
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    var data = [];
-    projview_query = "SELECT [Project].[recordid] ,[projname],[projdesc],[countryname],[countrydesc],[cityname],[citydesc],[Project].[campusname],[campusdesc],[buildingname],[buildingdesc],[equipmentname],[equipmentid],[associatedequipid],[associatedequipdesc],[users],[equipmentdesc],[CampusScale].[campusscale]  FROM [" + dbName + "].[ECCAnalytics].[Project] left join [" + dbName + "].[ECCAnalytics].[CampusScale] on [Project].[campusname] = [CampusScale].[campusname]"
-    records = await request.query(projview_query)
-    var data = [];
-    for (var i = 0; i < records['recordsets'][0].length; i++) {
-      data.push({ recordid: records['recordsets'][0][i]['recordid'], projname: records['recordsets'][0][i]['projname'], projdesc: records['recordsets'][0][i]['projdesc'], countryname: records['recordsets'][0][i]['countryname'], countrydesc: records['recordsets'][0][i]['countrydesc'], cityname: records['recordsets'][0][i]['cityname'], citydesc: records['recordsets'][0][i]['citydesc'], campusname: records['recordsets'][0][i]['campusname'], campusdesc: records['recordsets'][0][i]['campusdesc'], buildingname: records['recordsets'][0][i]['buildingname'], buildingdesc: records['recordsets'][0][i]['buildingdesc'], equipmentname: records['recordsets'][0][i]['equipmentname'], equipmentid: records['recordsets'][0][i]['equipmentid'], associatedequipid: records['recordsets'][0][i]['associatedequipid'], associatedequipdesc: records['recordsets'][0][i]['associatedequipdesc'], equipmentdesc: records['recordsets'][0][i]['equipmentdesc'], campuscale: records['recordsets'][0][i]['campusscale'] });
-      //DATA.    ({'recordid': row[0],'projname': row[1],'projdesc' : row[2],'countryname' : row[3],'countrydesc' : row[4],'cityname' : row[5],'citydesc' : row[6],'campusname' : row[7],'campusdesc' : row[8],'buildingname' : row[9],'buildingdesc' : row[10],'equipmentname' : row[11],'equipmenttype' : row[12],'subequipmentname' : row[13],'subequipmentdesc' : row[14]})
-    }
-    return res.status(200).json(data)
-
-
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-
-}
-
-
-
-const postprojectview_2_7_2024 = (req, res) => {
-  console.log(req.originalUrl)
-
-  dbName = config.databse
-  projname = req.body.projname
-  projdesc = req.body.projdesc
-  countryname = req.body.countryname
-  countrydesc = req.body.countrydesc
-  cityname = req.body.cityname
-  citydesc = req.body.citydesc
-  campusname = req.body.campusname
-  campusscale = req.body.campusscale
-  campusdesc = req.body.campusdesc
-  buildingname = req.body.buildingname
-  buildingdesc = req.body.buildingdesc
-  equipmentname = req.body.equipmentname
-  equipmentid = req.body.equipmentid
-  associatedequipid = req.body.associatedequipid
-  associatedequipdesc = req.body.associatedequipdesc
-  users = req.body.users
-
-
-
-
-
-  //query = "INSERT INTO ["+dbName+"].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmenttype,subequipmentname,subequipmentdesc,users) VALUES ('"+projname+"','"+projdesc+"','"+countryname+"','"+countrydesc+"','"+cityname+"','"+citydesc+"','"+campusname+"','"+campusdesc+"','"+buildingname+"','"+buildingdesc+"','"+equipmentname+"','"+equipmenttype+"','"+subequipmentname+"','"+subequipmentdesc+"',"+users+");"
-
-  //return res.status(200).json(query)
-  //query2 = "INSERT INTO ["+dbName+"].[ECCAnalytics].[Task] ([taskid],[alarmid],[taskname],[taskpriority],[taskassigneddate],[buildingname],[subequipmenttype],[taskstatus],[escalationstage]) VALUES ('"+taskid.toString()+"',"+req.body.alarmid.toString()+",'"+req.body.taskname.toString()+"','Low', CURRENT_TIMESTAMP,'"+req.body.buildingname.toString()+"','"+req.body.equipmentname.toString()+"','1','Stage1');"
-
-
-
-  sql.connect(config, function (err) {
-    if (err) conole.log(err)
-
-    var request = new sql.Request();
-
-    // query = "SELECT * FROM ["+dbName+"].[ECCAnalytics].[CampusScale] where [campusname] ='"+campusname+ "' and campusscale = '"+campusscale+"'"
-
-    //query = "INSERT INTO ["+dbName+"].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users) VALUES ('"+projname+"','"+projdesc+"','"+countryname+"','"+countrydesc+"','"+cityname+"','"+citydesc+"','"+campusname+"','"+campusdesc+"','"+buildingname+"','"+buildingdesc+"','"+equipmentname+"','"+equipmentid+"','"+associatedequipid+"','"+associatedequipdesc+"',"+users+");"
-    chkEquipmentQuery = " SELECT [equipmentname] FROM [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] ='" + equipmentname + "'"
-    request.query(chkEquipmentQuery, function (err, chkEquipmentRecords) {
-      if (err)
-        console.log(query);
-      else {
-        //console.log(query);
-        if (chkEquipmentRecords['recordsets'][0].length != 0)
-          //console.log('success');
-          return res.status(200).json('equipment exists')
-        else {
-
-          query = "SELECT * FROM [" + dbName + "].[ECCAnalytics].[CampusScale] where [campusname] ='" + campusname + "'"
-
-          //**********************************************check equipment********************* */
-          request.query(query, function (err, records) {
-            if (err)
-              console.log(query);
-            else {
-              console.log(query);
-
-              //console.log('success');
-              if (records['recordsets'][0].length != 0) {
-                //query = "INSERT INTO ["+dbName+"].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users) VALUES ('"+projname+"','"+projdesc+"','"+countryname+"','"+countrydesc+"','"+cityname+"','"+citydesc+"','"+campusname+"','"+campusdesc+"','"+buildingname+"','"+buildingdesc+"','"+equipmentname+"','"+equipmentid+"','"+associatedequipid+"','"+associatedequipdesc+"',"+users+");"
-                query1 = "update [" + dbName + "].[ECCAnalytics].[CampusScale] set [campusscale] =  '" + campusscale + "' where [campusname] = '" + campusname + "';"
-
-                query2 = "INSERT INTO [" + dbName + "].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users) VALUES ('" + projname + "','" + projdesc + "','" + countryname + "','" + countrydesc + "','" + cityname + "','" + citydesc + "','" + campusname + "','" + campusdesc + "','" + buildingname + "','" + buildingdesc + "','" + equipmentname + "','" + equipmentid + "','" + associatedequipid + "','" + associatedequipdesc + "'," + users + ");"
-                query = query1 + query2;
-                //query = query2;
-
-                request.query(query, function (err, records) {
-                  if (err)
-                    console.log(query);
-                  else {
-                    console.log(query);
-
-                    //console.log('success');
-                    return res.status(200).json('success')
-
-                  }
-
-
-                })
-              } else {
-                query1 = "INSERT INTO [" + dbName + "].[ECCAnalytics].[CampusScale] ([campusname] ,[campusscale]) values ('" + campusname + "','" + campusscale + "');"
-                //query1 = "update ["+dbName+"].[ECCAnalytics].[CampusScale] set [campusscale] =  '"+campusscale+"';"  
-                query2 = "INSERT INTO [" + dbName + "].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users) VALUES ('" + projname + "','" + projdesc + "','" + countryname + "','" + countrydesc + "','" + cityname + "','" + citydesc + "','" + campusname + "','" + campusdesc + "','" + buildingname + "','" + buildingdesc + "','" + equipmentname + "','" + equipmentid + "','" + associatedequipid + "','" + associatedequipdesc + "'," + users + ");"
-                query = query1 + query2;
-                request.query(query, function (err, records) {
-                  if (err)
-                    console.log(query);
-                  else {
-                    console.log(query);
-
-                    //console.log('success');
-                    return res.status(200).json('success')
-
-                  }
-
-
-                })
-              }
-              // return res.status(200).json('success')
-
-            }
-
-
-          })
-          //********************************** CHECK EQUIPMENT NAME******************* */    
-        }
-      }
-    })
-
-
-  })
-
-
-}
-
-
-const postprojectview = async (req, res) => {
-  console.log(req.originalUrl)
-  const pool = new sql.ConnectionPool(config);
-
-  modifier = req.query.modifier
-  dbName = config.databse
-  projname = req.body.projname
-  projdesc = req.body.projdesc
-  countryname = req.body.countryname
-  countrydesc = req.body.countrydesc
-  cityname = req.body.cityname
-  citydesc = req.body.citydesc
-  campusname = req.body.campusname
-  campusscale = req.body.campusscale
-  campusdesc = req.body.campusdesc
-  buildingname = req.body.buildingname
-  buildingdesc = req.body.buildingdesc
-  equipmentname = req.body.equipmentname
-  equipmentid = req.body.equipmentid
-  associatedequipid = req.body.associatedequipid
-  associatedequipdesc = req.body.associatedequipdesc
-  users = req.body.users
-  equipmentdesc = req.body.equipmentdesc
-
-
-
-
-  //query = "INSERT INTO ["+dbName+"].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmenttype,subequipmentname,subequipmentdesc,users) VALUES ('"+projname+"','"+projdesc+"','"+countryname+"','"+countrydesc+"','"+cityname+"','"+citydesc+"','"+campusname+"','"+campusdesc+"','"+buildingname+"','"+buildingdesc+"','"+equipmentname+"','"+equipmenttype+"','"+subequipmentname+"','"+subequipmentdesc+"',"+users+");"
-
-  //return res.status(200).json(query)
-  //query2 = "INSERT INTO ["+dbName+"].[ECCAnalytics].[Task] ([taskid],[alarmid],[taskname],[taskpriority],[taskassigneddate],[buildingname],[subequipmenttype],[taskstatus],[escalationstage]) VALUES ('"+taskid.toString()+"',"+req.body.alarmid.toString()+",'"+req.body.taskname.toString()+"','Low', CURRENT_TIMESTAMP,'"+req.body.buildingname.toString()+"','"+req.body.equipmentname.toString()+"','1','Stage1');"
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    chkEquipmentQuery = " SELECT [equipmentname] FROM [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] ='" + equipmentname + "'"
-
-    chkEquipmentRecords = await request.query(chkEquipmentQuery)
-
-    //return res.status(200).json(chkEquipmentRecords['recordsets'][0])
-
-    if (chkEquipmentRecords['recordsets'][0].length != 0) {
-      //console.log('success');
-      return res.status(200).json('equipment exists')
-
-    } else {
-      // return res.status(200).json(chkEquipmentRecords['recordsets'][0])
-      // return res.status(200).json('inside else')
-      CampusScalequery = "SELECT * FROM [" + dbName + "].[ECCAnalytics].[CampusScale] where [campusname] ='" + campusname + "'"
-      CampusScaleRecords = await request.query(CampusScalequery)
-
-      if (CampusScaleRecords['recordsets'][0].length != 0) {
-        query1 = "update [" + dbName + "].[ECCAnalytics].[CampusScale] set [campusscale] =  '" + campusscale + "' where [campusname] = '" + campusname + "';"
-
-        //query2 = "INSERT INTO ["+dbName+"].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users) VALUES ('"+projname+"','"+projdesc+"','"+countryname+"','"+countrydesc+"','"+cityname+"','"+citydesc+"','"+campusname+"','"+campusdesc+"','"+buildingname+"','"+buildingdesc+"','"+equipmentname+"','"+equipmentid+"','"+associatedequipid+"','"+associatedequipdesc+"',"+users+");"
-        query2 = "INSERT INTO [" + dbName + "].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users,equipmentdesc) VALUES ('" + projname + "','" + projdesc + "','" + countryname + "','" + countrydesc + "','" + cityname + "','" + citydesc + "','" + campusname + "','" + campusdesc + "','" + buildingname + "','" + buildingdesc + "','" + equipmentname + "','" + equipmentid + "','" + associatedequipid + "','" + associatedequipdesc + "'," + users + ",'" + equipmentdesc + "');"
-        //            updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + projectrecordid + "','add',CURRENT_TIMESTAMP); "
-        query = query1 + query2;
-        //  return res.status(200).json(query)
-
-        await request.query(query)
-
-        projectRecordIdQuery = " SELECT [recordid],[equipmentname] FROM [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] ='" + equipmentname + "'"
-        projectRecordsData = await request.query(projectRecordIdQuery)
-        newProjectRecordId = projectRecordsData['recordsets'][0][0].recordid
-        // createProjectquery = query1 + query2 + updateprojectaudit_query;
-        // console.log(projectRecordsData['recordsets'][0])
-        //return res.status(200).json(projectRecordsData['recordsets'][0][0].recordid)
-        updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + newProjectRecordId + "','add',CURRENT_TIMESTAMP); "
-        await request.query(updateprojectaudit_query)
-        return res.status(200).json('success')
-
-
-      } else {
-        query1 = "INSERT INTO [" + dbName + "].[ECCAnalytics].[CampusScale] ([campusname] ,[campusscale]) values ('" + campusname + "','" + campusscale + "');"
-        //query1 = "update ["+dbName+"].[ECCAnalytics].[CampusScale] set [campusscale] =  '"+campusscale+"';"  
-        //query2 = "INSERT INTO ["+dbName+"].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users) VALUES ('"+projname+"','"+projdesc+"','"+countryname+"','"+countrydesc+"','"+cityname+"','"+citydesc+"','"+campusname+"','"+campusdesc+"','"+buildingname+"','"+buildingdesc+"','"+equipmentname+"','"+equipmentid+"','"+associatedequipid+"','"+associatedequipdesc+"',"+users+");"
-        query2 = "INSERT INTO [" + dbName + "].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users,equipmentdesc) VALUES ('" + projname + "','" + projdesc + "','" + countryname + "','" + countrydesc + "','" + cityname + "','" + citydesc + "','" + campusname + "','" + campusdesc + "','" + buildingname + "','" + buildingdesc + "','" + equipmentname + "','" + equipmentid + "','" + associatedequipid + "','" + associatedequipdesc + "'," + users + ",'" + equipmentdesc + "');"
-        //updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + projectrecordid + "','add',CURRENT_TIMESTAMP); "
-
-        // query = query1 + query2 + updateprojectaudit_query;
-        query = query1 + query2;
-        //  query = query1 + query2;
-        await request.query(query)
-
-        projectRecordIdQuery = " SELECT [recordid],[equipmentname] FROM [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] ='" + equipmentname + "'"
-        projectRecordsData = await request.query(projectRecordIdQuery)
-        newProjectRecordId = projectRecordsData['recordsets'][0][0].recordid
-        // createProjectquery = query1 + query2 + updateprojectaudit_query;
-
-        updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + newProjectRecordId + "','add',CURRENT_TIMESTAMP); "
-        await request.query(updateprojectaudit_query)
-        return res.status(200).json('success')
-
-
-      }
-    }
-
-
-  } catch (err) {
-    console.error(err);
-    //console.error(updateprojectaudit_query);
-
-    return res.status(500).json('failed');
-
-  } finally {
-
-    pool.close();
-
-
-  }
-
-}
-
-
-const deleteproject_6_7_2024 = (req, res) => {
+const deleteproject_27_6_2024 = (req, res) => {
   console.log(req.originalUrl)
 
   deleteproject_query = ""
@@ -711,28 +329,24 @@ const deleteproject_6_7_2024 = (req, res) => {
 
 }
 
-
 const deleteproject = async (req, res) => {
   console.log(req.originalUrl)
   dbName = config.databse
   const pool = new sql.ConnectionPool(config);
 
+  modifier = req.query.modifier
+  equipmentname = req.query.eq
 
   try {
     await pool.connect();
     const request = pool.request();
 
-
     deleteproject_query = ""
     if (typeof req.query.cn !== 'undefined') {
-      dbName = config.databse
-      //query = " delete  FROM ["+dbName+"].[ECCAnalytics].[Project] where [countryname] = '"+req.query.cn+"'";
 
       query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
-      //query = "select datapointid ,[devicerecordid] from   [ECC_DEV].[ECCAnalytics].[DataPoint] where devicerecordid in " 
       query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
       query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "')); "
-      //return res.status(200).json(query)
       query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
       query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "'); "
 
@@ -740,18 +354,23 @@ const deleteproject = async (req, res) => {
 
       deleteproject_query = query1 + query2 + query3;
 
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for (count = 0; count < projectData['recordsets'][0].length; count++) {
+        equipmentName += projectData['recordsets'][0][count].equipmentname + ", "
+        projectRecordId += projectData['recordsets'][0][count].recordid + ", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
+
     }
 
     if (typeof req.query.ct !== 'undefined') {
-      dbName = config.databse
-      //query = " delete  FROM ["+dbName+"].[ECCAnalytics].[Project] where [cityname] = '"+req.query.ct+"'";
-      //return res.status(200).json(query)
 
       query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
-      //query = "select datapointid ,[devicerecordid] from   [ECC_DEV].[ECCAnalytics].[DataPoint] where devicerecordid in " 
       query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
       query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "')); "
-      //return res.status(200).json(query)
       query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
       query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "'); "
 
@@ -759,20 +378,24 @@ const deleteproject = async (req, res) => {
 
       deleteproject_query = query1 + query2 + query3;
 
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for (count = 0; count < projectData['recordsets'][0].length; count++) {
+        equipmentName += projectData['recordsets'][0][count].equipmentname + ", "
+        projectRecordId += projectData['recordsets'][0][count].recordid + ", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
 
 
     }
 
     if (typeof req.query.cm !== 'undefined') {
-      dbName = config.databse
-      //query = " delete  FROM ["+dbName+"].[ECCAnalytics].[Project] where [campusname] = '"+req.query.cm+"'";
-      //return res.status(200).json(query)
 
       query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
-      //query = "select datapointid ,[devicerecordid] from   [ECC_DEV].[ECCAnalytics].[DataPoint] where devicerecordid in " 
       query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
       query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "')); "
-      //return res.status(200).json(query)
       query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
       query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "'); "
 
@@ -781,18 +404,23 @@ const deleteproject = async (req, res) => {
       deleteproject_query = query1 + query2 + query3;
 
 
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for (count = 0; count < projectData['recordsets'][0].length; count++) {
+        equipmentName += projectData['recordsets'][0][count].equipmentname + ", "
+        projectRecordId += projectData['recordsets'][0][count].recordid + ", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
+
     }
 
     if (typeof req.query.bl !== 'undefined') {
-      dbName = config.databse
-      //query = " delete  FROM ["+dbName+"].[ECCAnalytics].[Project] where [buildingname] = '"+req.query.bl+"'";
-      //return res.status(200).json(query)
 
       query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
-      //query = "select datapointid ,[devicerecordid] from   [ECC_DEV].[ECCAnalytics].[DataPoint] where devicerecordid in " 
       query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
       query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "')); "
-      //return res.status(200).json(query)
       query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
       query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "'); "
 
@@ -800,20 +428,24 @@ const deleteproject = async (req, res) => {
 
       deleteproject_query = query1 + query2 + query3;
 
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for (count = 0; count < projectData['recordsets'][0].length; count++) {
+        equipmentName += projectData['recordsets'][0][count].equipmentname + ", "
+        projectRecordId += projectData['recordsets'][0][count].recordid + ", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
 
     }
 
 
     if (typeof req.query.eq !== 'undefined') {
-      dbName = config.databse
-      //query = " delete  FROM ["+dbName+"].[ECCAnalytics].[Project] where [equipmentname] = '"+req.query.eq+"'";
-      //return res.status(200).json(query)
 
       query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
-      //query = "select datapointid ,[devicerecordid] from   [ECC_DEV].[ECCAnalytics].[DataPoint] where devicerecordid in " 
       query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
       query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "')); "
-      //return res.status(200).json(query)
       query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
       query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "'); "
 
@@ -821,23 +453,155 @@ const deleteproject = async (req, res) => {
 
       deleteproject_query = query1 + query2 + query3;
 
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "'";
+      projectData = await request.query(projectDetailSQL)
+      projectrecordid = projectData['recordsets'][0][0].recordid
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + projectrecordid + "','delete',CURRENT_TIMESTAMP); "
+
 
     }
 
+
+
+    deleteproject_query += updateprojectaudit_query;
+    console.log(deleteproject_query)
     await request.query(deleteproject_query)
+
     return res.status(200).json('success')
 
-
   } catch (err) {
-    console.error('Error with SQL Server:', err);
+    console.error(err);
+    console.error(deleteproject_query);
+    return res.status(500).json('failed');
+
   } finally {
-    // Close the connection pool
+
     pool.close();
+
+
   }
 
 
+}
+
+
+
+const postprojectview = async (req, res) => {
+  console.log(req.originalUrl)
+  const pool = new sql.ConnectionPool(config);
+
+  modifier = req.query.modifier
+  dbName = config.databse
+  projname = req.body.projname
+  projdesc = req.body.projdesc
+  countryname = req.body.countryname
+  countrydesc = req.body.countrydesc
+  cityname = req.body.cityname
+  citydesc = req.body.citydesc
+  campusname = req.body.campusname
+  campusscale = req.body.campusscale
+  campusdesc = req.body.campusdesc
+  buildingname = req.body.buildingname
+  buildingdesc = req.body.buildingdesc
+  equipmentname = req.body.equipmentname
+  equipmentid = req.body.equipmentid
+  associatedequipid = req.body.associatedequipid
+  associatedequipdesc = req.body.associatedequipdesc
+  users = req.body.users
+  equipmentdesc = req.body.equipmentdesc
+
+
+
+
+  //query = "INSERT INTO ["+dbName+"].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmenttype,subequipmentname,subequipmentdesc,users) VALUES ('"+projname+"','"+projdesc+"','"+countryname+"','"+countrydesc+"','"+cityname+"','"+citydesc+"','"+campusname+"','"+campusdesc+"','"+buildingname+"','"+buildingdesc+"','"+equipmentname+"','"+equipmenttype+"','"+subequipmentname+"','"+subequipmentdesc+"',"+users+");"
+
+  //return res.status(200).json(query)
+  //query2 = "INSERT INTO ["+dbName+"].[ECCAnalytics].[Task] ([taskid],[alarmid],[taskname],[taskpriority],[taskassigneddate],[buildingname],[subequipmenttype],[taskstatus],[escalationstage]) VALUES ('"+taskid.toString()+"',"+req.body.alarmid.toString()+",'"+req.body.taskname.toString()+"','Low', CURRENT_TIMESTAMP,'"+req.body.buildingname.toString()+"','"+req.body.equipmentname.toString()+"','1','Stage1');"
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+    chkEquipmentQuery = " SELECT [equipmentname] FROM [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] ='" + equipmentname + "'"
+
+    chkEquipmentRecords = await request.query(chkEquipmentQuery)
+
+    //return res.status(200).json(chkEquipmentRecords['recordsets'][0])
+
+    if (chkEquipmentRecords['recordsets'][0].length != 0) {
+      //console.log('success');
+      return res.status(200).json('equipment exists')
+
+    } else { 
+      // return res.status(200).json(chkEquipmentRecords['recordsets'][0])
+      // return res.status(200).json('inside else')
+      CampusScalequery = "SELECT * FROM [" + dbName + "].[ECCAnalytics].[CampusScale] where [campusname] ='" + campusname + "'"
+      CampusScaleRecords = await request.query(CampusScalequery)
+
+      if (CampusScaleRecords['recordsets'][0].length != 0) {
+        query1 = "update [" + dbName + "].[ECCAnalytics].[CampusScale] set [campusscale] =  '" + campusscale + "' where [campusname] = '" + campusname + "';"
+
+        //query2 = "INSERT INTO ["+dbName+"].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users) VALUES ('"+projname+"','"+projdesc+"','"+countryname+"','"+countrydesc+"','"+cityname+"','"+citydesc+"','"+campusname+"','"+campusdesc+"','"+buildingname+"','"+buildingdesc+"','"+equipmentname+"','"+equipmentid+"','"+associatedequipid+"','"+associatedequipdesc+"',"+users+");"
+        query2 = "INSERT INTO [" + dbName + "].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users,equipmentdesc) VALUES ('" + projname + "','" + projdesc + "','" + countryname + "','" + countrydesc + "','" + cityname + "','" + citydesc + "','" + campusname + "','" + campusdesc + "','" + buildingname + "','" + buildingdesc + "','" + equipmentname + "','" + equipmentid + "','" + associatedequipid + "','" + associatedequipdesc + "'," + users + ",'" + equipmentdesc + "');"
+        //            updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + projectrecordid + "','add',CURRENT_TIMESTAMP); "
+        query = query1 + query2;
+        //  return res.status(200).json(query)
+
+        await request.query(query)
+
+        projectRecordIdQuery = " SELECT [recordid],[equipmentname] FROM [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] ='" + equipmentname + "'"
+        projectRecordsData = await request.query(projectRecordIdQuery)
+        newProjectRecordId = projectRecordsData['recordsets'][0][0].recordid
+        // createProjectquery = query1 + query2 + updateprojectaudit_query;
+        // console.log(projectRecordsData['recordsets'][0])
+        //return res.status(200).json(projectRecordsData['recordsets'][0][0].recordid)
+        updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + newProjectRecordId + "','add',CURRENT_TIMESTAMP); "
+        await request.query(updateprojectaudit_query)
+        return res.status(200).json('success')
+
+
+      } else {
+        query1 = "INSERT INTO [" + dbName + "].[ECCAnalytics].[CampusScale] ([campusname] ,[campusscale]) values ('" + campusname + "','" + campusscale + "');"
+        //query1 = "update ["+dbName+"].[ECCAnalytics].[CampusScale] set [campusscale] =  '"+campusscale+"';"  
+        //query2 = "INSERT INTO ["+dbName+"].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users) VALUES ('"+projname+"','"+projdesc+"','"+countryname+"','"+countrydesc+"','"+cityname+"','"+citydesc+"','"+campusname+"','"+campusdesc+"','"+buildingname+"','"+buildingdesc+"','"+equipmentname+"','"+equipmentid+"','"+associatedequipid+"','"+associatedequipdesc+"',"+users+");"
+        query2 = "INSERT INTO [" + dbName + "].ECCAnalytics.Project ( projname, projdesc,countryname,countrydesc,cityname,citydesc,campusname,campusdesc,buildingname,buildingdesc,equipmentname,equipmentid,associatedequipid,associatedequipdesc,users,equipmentdesc) VALUES ('" + projname + "','" + projdesc + "','" + countryname + "','" + countrydesc + "','" + cityname + "','" + citydesc + "','" + campusname + "','" + campusdesc + "','" + buildingname + "','" + buildingdesc + "','" + equipmentname + "','" + equipmentid + "','" + associatedequipid + "','" + associatedequipdesc + "'," + users + ",'" + equipmentdesc + "');"
+        //updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + projectrecordid + "','add',CURRENT_TIMESTAMP); "
+
+        // query = query1 + query2 + updateprojectaudit_query;
+        query = query1 + query2;
+        //  query = query1 + query2;
+        await request.query(query)
+
+        projectRecordIdQuery = " SELECT [recordid],[equipmentname] FROM [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] ='" + equipmentname + "'"
+        projectRecordsData = await request.query(projectRecordIdQuery)
+        newProjectRecordId = projectRecordsData['recordsets'][0][0].recordid
+        // createProjectquery = query1 + query2 + updateprojectaudit_query;
+
+        updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + newProjectRecordId + "','add',CURRENT_TIMESTAMP); "
+        await request.query(updateprojectaudit_query)
+        return res.status(200).json('success')
+
+
+      }
+    }
+
+
+  } catch (err) {
+    console.error(updateprojectaudit_query);
+    console.error(updateprojectaudit_query);
+
+    return res.status(500).json('failed');
+
+  } finally {
+
+    pool.close();
+
+
+  }
 
 }
+
+
 
 
 const deleteuser_25_6_2024 = async (req, res) => {
@@ -1160,7 +924,7 @@ const updateuser = async (req, res) => {
 
 
 
-const getbuilding_6_7_2024 = (req, res) => {
+const getbuilding = (req, res) => {
   console.log(req.originalUrl)
 
   cm = req.query.cm
@@ -1193,37 +957,10 @@ const getbuilding_6_7_2024 = (req, res) => {
   })
 }
 
-const getbuilding = async (req, res) => {
-
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-  cm = req.query.cm
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    getbuilding_query = "SELECT [recordid],[buildingname] as building FROM [" + dbName + "].[ECCAnalytics].[Buildings] where campusname = '" + cm + "'"
-    records = await request.query(getbuilding_query)
-
-    return res.status(200).json(records['recordsets'][0])
-
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-
-}
 
 
 
-
-const getcampus_6_7_2024 = (req, res) => {
+const getcampus = (req, res) => {
   console.log(req.originalUrl)
 
   ct = req.query.ct
@@ -1257,34 +994,7 @@ const getcampus_6_7_2024 = (req, res) => {
 }
 
 
-const getcampus = async (req, res) => {
-
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-  ct = req.query.ct
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    getcampus_query = "SELECT [recordid],[campusname] as campus FROM [" + dbName + "].[ECCAnalytics].[Campuses] where cityname = '" + ct + "'"
-    records = await request.query(getcampus_query)
-
-    return res.status(200).json(records['recordsets'][0])
-
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-
-}
-
-const getcity_6_7_2024 = (req, res) => {
+const getcity = (req, res) => {
   console.log(req.originalUrl)
 
   cn = req.query.cn
@@ -1317,34 +1027,9 @@ const getcity_6_7_2024 = (req, res) => {
   })
 }
 
-const getcity = async (req, res) => {
-
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-  cn = req.query.cn
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    getcity_query = "SELECT [recordid],[cityname] FROM [" + dbName + "].[ECCAnalytics].[Cities] where countryname = '" + cn + "'"
-    records = await request.query(getcity_query)
-
-    return res.status(200).json(records['recordsets'][0])
-
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
 
 
-}
-
-const getcountry_6_7_2024 = (req, res) => {
+const getcountry = (req, res) => {
   console.log(req.originalUrl)
 
   cn = req.query.cn
@@ -1377,34 +1062,8 @@ const getcountry_6_7_2024 = (req, res) => {
   })
 }
 
-const getcountry = async (req, res) => {
 
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-  //  cn = req.query.cn
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    query = "SELECT [recordid],[countryname] FROM [" + dbName + "].[ECCAnalytics].[Countries]"
-    records = await request.query(query)
-
-    return res.status(200).json(records['recordsets'][0])
-
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-
-}
-
-const getdevices_6_7_2024 = (req, res) => {
+const getdevices = (req, res) => {
   console.log(req.originalUrl);
 
   dbName = config.databse
@@ -1440,34 +1099,7 @@ const getdevices_6_7_2024 = (req, res) => {
 }
 
 
-const getdevices = async (req, res) => {
-
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-  //  cn = req.query.cn
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    query = "SELECT [equipmentname],[deviceid],[ip],[port],[network],[manufacturer],[modelname] FROM [" + dbName + "].[ECCAnalytics].Devices"
-    records = await request.query(query)
-
-    return res.status(200).json(records['recordsets'][0])
-
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-
-}
-
-const getusers_6_7_2024 = (req, res) => {
+const getusers = (req, res) => {
   console.log(req.originalUrl);
   dbName = config.databse
 
@@ -1502,32 +1134,6 @@ const getusers_6_7_2024 = (req, res) => {
   })
 }
 
-const getusers = async (req, res) => {
-
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-  //  cn = req.query.cn
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    query = "SELECT * FROM [" + dbName + "].[ECCAnalytics].Users"
-    records = await request.query(query)
-
-    return res.status(200).json(records['recordsets'][0])
-
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-
-}
 
 
 const adduser_25_6_2024 = (req, res) => {
@@ -1634,58 +1240,51 @@ const adduser = async (req, res) => {
 
 }
 
-const subequipmentdatapoint = async (req, res) => {
+const subequipmentdatapoint = (req, res) => {
   console.log(req.originalUrl);
   dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
 
   eqptid = req.query.eqptid
   assoeqptid = req.query.aeid
 
 
-  try {
-    await pool.connect();
-    const request = pool.request();
+  sql.connect(config, function (err) {
+    if (err) conole.log(err)
 
-    query = "select [T1].[pointid], [T1].[pointdesc],[T2].[associatedequipid], [T3].[associatedequiptype] from [" + dbName + "].[ECCAnalytics].[PointType] T1 left join [" + dbName + "].ECCAnalytics.AssociatedEquipments_DataPoints T2 on [T1].[pointid] =  [T2].[pointid] left join [" + dbName + "].[ECCAnalytics].[AssociatedEquipments]  T3 on [T2].[associatedequipid] = [T3].[associatedequipid] where [T2].associatedequipid  in(" + assoeqptid + ") and [T2].equipmentid ='" + eqptid + "' and [T3].equipmentid ='" + eqptid + "'"
-    records = await request.query(query)
-console.log(query)
-    return res.status(200).json(records['recordsets'][0])
 
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
+    var request = new sql.Request();
 
-  }
 
-  /*
-    sql.connect(config, function (err) {
-      if (err) conole.log(err)
-  
-  
-      var request = new sql.Request();
-  
-  
-      query = "select [T1].[pointid], [T1].[pointdesc],[T2].[associatedequipid], [T3].[associatedequiptype] from [" + dbName + "].[ECCAnalytics].[PointType] T1 left join [" + dbName + "].ECCAnalytics.AssociatedEquipments_DataPoints T2 on [T1].[pointid] =  [T2].[pointid] left join [" + dbName + "].[ECCAnalytics].[AssociatedEquipments]  T3 on [T2].[associatedequipid] = [T3].[associatedequipid] where [T2].equipmentid ='" + eqptid + "' and [T2].associatedequipid  in(" + assoeqptid + ")"
-  
-      request.query(query, function (err, records) {
-        if (err)
-          console.log(err);
-        else {
-          // DATA.append({'equipmentname': row[1],'deviceid': row[2],'ip': row[3],'port': row[4],'network': row[5],'manufacturer': row[6],'modelname': row[7] })
-  
-          console.log(query);
-  
-          return res.status(200).json(records['recordsets'][0])
-        }
-  
+    //query = "SELECT [recordid],[countryname] FROM ["+dbName+"].[ECCAnalytics].[Countries]"
+    //query = "SELECT datapointname FROM ["+dbName+"].ECCAnalytics.SubEquipments_DataPoints where equipmenttype ='"+eqpt+"' and subequipmenttype ='"+sbeqpt+"'"
+
+    //After tables are modified previous sql was not in use and following query is in place
+    // query = "SELECT associatedequiptype FROM ["+dbName+"].ECCAnalytics.AssociatedEquipments where equipmentid ='"+eqptid+"' and associatedequipid ='"+assoeqptid+"'"
+    //query = "SELECT associatedequiptype FROM ["+dbName+"].ECCAnalytics.AssociatedEquipments where equipmentid ='"+eqptid+"' and associatedequipid in("+assoeqptid+")"
+    //query = "select pointid, [pointdesc] from ["+dbName+"].[ECCAnalytics].[PointType] where pointid in (SELECT [pointid] FROM ["+dbName+"].ECCAnalytics.AssociatedEquipments_DataPoints where equipmentid ='"+eqptid+"' and associatedequipid in("+assoeqptid+"))"
+    query = "select [T1].[pointid], [T1].[pointdesc],[T2].[associatedequipid], [T3].[associatedequiptype] from [" + dbName + "].[ECCAnalytics].[PointType] T1 left join [" + dbName + "].ECCAnalytics.AssociatedEquipments_DataPoints T2 on [T1].[pointid] =  [T2].[pointid] left join [" + dbName + "].[ECCAnalytics].[AssociatedEquipments]  T3 on [T2].[associatedequipid] = [T3].[associatedequipid] where [T2].associatedequipid  in(" + assoeqptid + ") and [T2].equipmentid ='" + eqptid + "'"
+
+    request.query(query, function (err, records) {
+      if (err)
+        console.log(err);
+      else {
+        // DATA.append({'equipmentname': row[1],'deviceid': row[2],'ip': row[3],'port': row[4],'network': row[5],'manufacturer': row[6],'modelname': row[7] })
+
+        /*
+                  var data = [];
+                  for (var i = 0; i < records['recordsets'][0].length; i++) { 
+                   data.push({recordid: records['recordsets'][0][i]['recordid'],projname: records['recordsets'][0][i]['projname'],projdesc: records['recordsets'][0][i]['projdesc'],countryname: records['recordsets'][0][i]['countryname'], countrydesc: records['recordsets'][0][i]['countrydesc'],cityname: records['recordsets'][0][i]['cityname'],citydesc: records['recordsets'][0][i]['citydesc'],campusname: records['recordsets'][0][i]['campusname'],campusdesc: records['recordsets'][0][i]['campusdesc'],buildingname: records['recordsets'][0][i]['buildingname'],buildingdesc: records['recordsets'][0][i]['buildingdesc'],equipmentname: records['recordsets'][0][i]['equipmentname'],equipmenttype: records['recordsets'][0][i]['equipmenttype'],subequipmentname: records['recordsets'][0][i]['subequipmentdesc'],subequipmentdesc: records['recordsets'][0][i]['subequipmentdesc']});
+                  }
+        */
+        console.log(query);
+
+        return res.status(200).json(records['recordsets'][0])
       }
-  
-      )
-    })
-    */
+
+    }
+
+    )
+  })
 }
 
 
@@ -1731,7 +1330,7 @@ const subequipmentlist_OLD = (req, res) => {
 
 
 
-const subequipmentlist_6_7_2024 = (req, res) => {
+const subequipmentlist = (req, res) => {
   console.log(req.originalUrl);
 
   dbName = config.databse
@@ -1769,33 +1368,6 @@ const subequipmentlist_6_7_2024 = (req, res) => {
 
     )
   })
-}
-
-const subequipmentlist = async (req, res) => {
-
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-  eqpid = req.query.eqpid
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    query = "SELECT [assoequiprecordid],[associatedequipid],[associatedequiptype] FROM [" + dbName + "].ECCAnalytics.AssociatedEquipments where equipmentid ='" + eqpid + "'"
-    records = await request.query(query)
-
-    return res.status(200).json(records['recordsets'][0])
-
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-
 }
 
 /********************************************************************** */
@@ -2589,7 +2161,7 @@ const postdatapoint_7_6_2024 = (req, res) => {
 
 }
 
-const postdatapoint = async (req, res) => {
+const postdatapoint_3_7_2024 = async (req, res) => {
   console.log(req.originalUrl);
 
   function findValueIndex(array, value) {
@@ -2834,12 +2406,291 @@ const postdatapoint = async (req, res) => {
 }
 
 
+const postdatapoint = async (req, res) => {
+  console.log(req.originalUrl);
+
+  function findValueIndex(array, value) {
+    const index = array.indexOf(value);
+    return index !== -1 ? index : null;
+  }
+
+  dbName = config.databse
+
+  modifier = req.query.modifier
+  datapoint = req.body.datapoint
+  actualpoint = req.body.actualpoint
+  multiply = req.body.multiply
+  addition = req.body.addition
+  objtype = req.body.objtype
+  objinstance = req.body.objinstance
+  devicerecordid = req.body.devicerecordid
+
+  devices = req.body.devices
+  //deviceid = devices[0]['deviceid']
+
+
+  existingDeviceId = []
+  newDeviceId = []
+  newDeviceTblRecordId = []
+  existingDeviceRecordId = []
+
+  try {
+    await sql.connect(config)
+    var request = new sql.Request();
+
+    chkquery = "SELECT *  FROM ("
+    for (i = 0; i < devices.length; i++) {
+      if (i == devices.length - 1) {
+        chkquery += " SELECT * FROM [" + dbName + "].ECCAnalytics.Devices where equipmentname ='" + req.body.equipmentname + "' and deviceid = '" + devices[i]['deviceid'] + "' "
+      } else {
+        chkquery += " SELECT * FROM [" + dbName + "].ECCAnalytics.Devices where equipmentname ='" + req.body.equipmentname + "' and deviceid = '" + devices[i]['deviceid'] + "' UNION ALL "
+      }
+    }
+
+    chkquery += ") AS combined_results;"
+
+    //return 0
+
+    chkqueryrecords = await request.query(chkquery)
+    newRecordAdded = 0
+    console.log(chkqueryrecords)
+    //return 0
+
+    existingDeviceIdWithRecordId = {}
+    for (total = 0; total < chkqueryrecords['recordsets'][0].length; total++) {
+      val = chkqueryrecords['recordsets'][0][total].deviceid
+      existingDeviceId.push(chkqueryrecords['recordsets'][0][total].deviceid)
+      existingDeviceRecordId.push(chkqueryrecords['recordsets'][0][total].recordid)
+      existingDeviceIdWithRecordId[chkqueryrecords['recordsets'][0][total].deviceid] = chkqueryrecords['recordsets'][0][total].recordid;
+    }
+
+    console.log(existingDeviceIdWithRecordId)
+    //console.log(existingDeviceIdWithRecordId[2537082])
+    //return 0
+    insertQueryForNewDevice = ''
+    devicesAuditaddSQL = ""
+    for (i = 0; i < devices.length; i++) {
+      if (existingDeviceId.includes(devices[i]['deviceid']) != true) {
+        insertQueryForNewDevice += " insert into [" + dbName + "].ECCAnalytics.Devices (equipmentname, deviceid, ip, port, network, manufacturer,modelname) values  ('" + req.body.equipmentname + "', '" + devices[i]['deviceid'] + "', '" + devices[i]['ip'] + "', '" + devices[i]['port'] + "', '" + devices[i]['network'] + "', '" + devices[i]['manufacturer'] + "', '" + devices[i]['modelname'] + "');"
+        devicesAuditaddSQL += " insert into [" + dbName + "].ECCAnalytics.DevicesAudit (equipmentname, deviceid, modifier, event, currentrecord, dated) values  ('" + req.body.equipmentname + "', '" + devices[i]['deviceid'] + "', '" + modifier + "', 'add', '" + devices[i]['deviceid'] + "', CURRENT_TIMESTAMP); "
+        newRecordAdded += 1
+      }
+    }
+
+    insertQueryForNewDevice += devicesAuditaddSQL
+    console.log(insertQueryForNewDevice)
+
+    //sql.close()
+    //await sql.connect(config)
+
+    /******************************************************************************************************** */
+
+    if (newRecordAdded > 0) {
+      await request.query(insertQueryForNewDevice)
+      queryToPickLastAddedRecord = "select * from ( select TOP (" + newRecordAdded + ")  recordid, deviceid FROM [" + dbName + "].[ECCAnalytics].[Devices] where equipmentname = '" + req.body.equipmentname + "' order by recordid DESC) devices_tbl order by devices_tbl.recordid;"
+      console.log()
+      lastAddedRecord = await request.query(queryToPickLastAddedRecord)
+      console.log(lastAddedRecord)
+      for (total = 0; total < lastAddedRecord['recordsets'][0].length; total++) {
+        val = lastAddedRecord['recordsets'][0][total].deviceid
+        newDeviceId.push(lastAddedRecord['recordsets'][0][total].deviceid)
+        newDeviceTblRecordId.push(lastAddedRecord['recordsets'][0][total].recordid)
+      }
+
+      // }
+
+      console.log(newDeviceTblRecordId)
+
+
+      // Existing Device
+
+      DPAddQueryForOldDevice = ""
+      DPAuditAddSQL = ""
+      totalNoofdatapointAdded = 0
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (existingDeviceId.includes(devices[dvc]['deviceid']) == true) {// for already added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] == null) {
+              //arrayId = findValueIndex(newDeviceId, devices[dvc]['deviceid'])
+              DPAddQueryForOldDevice += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPoint ( deviceid, pointid,actualpoint,multiply,addition,dated,objtype,objinstance,devicerecordid,isenergyvalue) VALUES "
+              DPAddQueryForOldDevice += "('" + devices[dvc]['deviceid'] + "','" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + devices[dvc]['datapoint'][dp]['multiply'] + "','" + devices[dvc]['datapoint'][dp]['addition'] + "', CURRENT_TIMESTAMP, '" + devices[dvc]['datapoint'][dp]['objtype'] + "', '" + devices[dvc]['datapoint'][dp]['objinstance'] + "', " + existingDeviceIdWithRecordId[devices[dvc]['deviceid']] + ", '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "');"
+              //totalNoofdatapointAdded++
+              DPAuditAddSQL += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPointAudit ( datapointid, pointid,actualpoint,modifier,event,previousrecord,currentrecord,dated) VALUES "
+              DPAuditAddSQL += "((SELECT TOP (1) [recordid] FROM [" + dbName + "].[ECCAnalytics].[DataPointAudit] order by recordid desc),'" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + modifier + "','add','','', CURRENT_TIMESTAMP);"
+              DPAddQueryForOldDevice += DPAuditAddSQL
+            }
+          }
+          //console.log(query3)
+
+        }
+      }
+
+      console.log(DPAddQueryForOldDevice)
+      await request.query(DPAddQueryForOldDevice)
+
+
+      //return 0
+      // Newly added Device
+
+
+      DPAddQueryForNewlyAddedDevice = ""
+      DPAuditAddSQL = ""
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (newDeviceId.includes(devices[dvc]['deviceid']) == true) {// for newly added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] == null) {
+              arrayId = findValueIndex(newDeviceId, devices[dvc]['deviceid'])
+              DPAddQueryForNewlyAddedDevice += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPoint ( deviceid, pointid,actualpoint,multiply,addition,dated,objtype,objinstance,devicerecordid,isenergyvalue) VALUES "
+              DPAddQueryForNewlyAddedDevice += "('" + devices[dvc]['deviceid'] + "','" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + devices[dvc]['datapoint'][dp]['multiply'] + "','" + devices[dvc]['datapoint'][dp]['addition'] + "', CURRENT_TIMESTAMP, '" + devices[dvc]['datapoint'][dp]['objtype'] + "', '" + devices[dvc]['datapoint'][dp]['objinstance'] + "', " + newDeviceTblRecordId[arrayId] + ", '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "');"
+
+              DPAuditAddSQL += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPointAudit ( datapointid, pointid,actualpoint,modifier,event,previousrecord,currentrecord,dated) VALUES "
+              DPAuditAddSQL += "((SELECT TOP (1) [recordid] FROM [" + dbName + "].[ECCAnalytics].[DataPointAudit] order by recordid desc),'" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + modifier + "','add','','', CURRENT_TIMESTAMP);"
+              DPAddQueryForOldDevice += DPAuditAddSQL
+
+            }
+          }
+          //console.log(query3)
+
+        }
+      }
+
+      await request.query(DPAddQueryForNewlyAddedDevice)
+
+
+      //For newly added device and update datapoint with existing datapoint
+
+      DPupdateQueryForNewlyAddedDevice = ""
+      DPAuditAddSQL = ""
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (newDeviceId.includes(devices[dvc]['deviceid']) == true) {// for newly added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] != null) {
+              arrayId = findValueIndex(newDeviceId, devices[dvc]['deviceid'])
+              //DPAddQueryForNewlyAddedDevice += " INSERT INTO ["+dbName+"].ECCAnalytics.DataPoint ( deviceid, pointid,actualpoint,multiply,addition,dated,objtype,objinstance,devicerecordid,isenergyvalue) VALUES "
+              //DPAddQueryForNewlyAddedDevice += "('"+devices[dvc]['deviceid']+"','"+devices[dvc]['datapoint'][dp]['pointid']+"','"+devices[dvc]['datapoint'][dp]['actualpoint']+"','"+devices[dvc]['datapoint'][dp]['multiply']+"','"+devices[dvc]['datapoint'][dp]['addition']+"', CURRENT_TIMESTAMP, '"+devices[dvc]['datapoint'][dp]['objtype']+"', '"+devices[dvc]['datapoint'][dp]['objinstance']+"', "+newDeviceTblRecordId[arrayId]+", '"+devices[dvc]['datapoint'][dp]['isenergyvalue']+"');"
+              pointid =  devices[dvc]['datapoint'][dp]['pointid']
+              deviceid = devices[dvc]['deviceid']
+              DPAuditAddSQL += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPointAudit ( datapointid, pointid,actualpoint,modifier,event,previousrecord,currentrecord,dated) VALUES "
+              DPAuditAddSQL += "("+devices[dvc]['datapoint'][dp]['datapointid']+",'" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + modifier + "','update',(SELECT [actualpoint] FROM [" + dbName + "].[ECCAnalytics].[DataPointAudit] where datapointid = " + devices[dvc]['datapoint'][dp]['datapointid'] + "),'"+pointid+","+deviceid+"', CURRENT_TIMESTAMP);"
+              DPupdateQueryForNewlyAddedDevice += " UPDATE [" + dbName + "].[ECCAnalytics].[DataPoint] SET  deviceid = '" + devices[dvc]['deviceid'] + "', pointid = '" + devices[dvc]['datapoint'][dp]['pointid'] + "',actualpoint = '" + devices[dvc]['datapoint'][dp]['actualpoint'] + "',multiply = '" + devices[dvc]['datapoint'][dp]['multiply'] + "', addition ='" + devices[dvc]['datapoint'][dp]['addition'] + "', objtype = '" + devices[dvc]['datapoint'][dp]['objtype'] + "',objinstance = '" + devices[dvc]['datapoint'][dp]['objinstance'] + "',devicerecordid = " + newDeviceTblRecordId[arrayId] + " ,isenergyvalue = '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "' where datapointid = " + devices[dvc]['datapoint'][dp]['datapointid'] + "; "
+              DPAuditAddSQL += DPupdateQueryForNewlyAddedDevice
+
+            }
+          }
+          //console.log(query3)
+        }
+      }
+
+
+
+      //await request.query(DPupdateQueryForNewlyAddedDevice)
+      await request.query(DPAuditAddSQL)
+
+
+      // Update existing
+
+      DPupdateQueryForOldDevice = ""
+      DPAuditAddSQL = ""
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (existingDeviceId.includes(devices[dvc]['deviceid']) == true) {// for update of already added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] != null) {
+              //DPupdateQueryForOldDevice += " UPDATE ["+dbName+"].[ECCAnalytics].[DataPoint] SET  pointid = '"+devices[dvc]['datapoint'][dp]['pointid']+"',actualpoint = '"+devices[dvc]['datapoint'][dp]['actualpoint']+"',multiply = '"+devices[dvc]['datapoint'][dp]['multiply']+"', addition ='"+devices[dvc]['datapoint'][dp]['addition']+"', objtype = '"+devices[dvc]['datapoint'][dp]['objtype']+"',objinstance = '"+devices[dvc]['datapoint'][dp]['objinstance']+"',isenergyvalue = '"+devices[dvc]['datapoint'][dp]['isenergyvalue']+"' where datapointid = "+devices[dvc]['datapoint'][dp]['datapointid']+"; "
+              pointid =  devices[dvc]['datapoint'][dp]['pointid']
+              deviceid = devices[dvc]['deviceid']
+              DPAuditAddSQL += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPointAudit ( datapointid, pointid,actualpoint,modifier,event,previousrecord,currentrecord,dated) VALUES "
+              DPAuditAddSQL += "("+devices[dvc]['datapoint'][dp]['datapointid']+",'" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + modifier + "','update',(SELECT [actualpoint] FROM [" + dbName + "].[ECCAnalytics].[DataPointAudit] where datapointid = " + devices[dvc]['datapoint'][dp]['datapointid'] + "),'"+pointid+","+deviceid+"', CURRENT_TIMESTAMP);"
+              DPupdateQueryForOldDevice += " UPDATE [" + dbName + "].[ECCAnalytics].[DataPoint] SET deviceid = '" + devices[dvc]['deviceid'] + "',  pointid = '" + devices[dvc]['datapoint'][dp]['pointid'] + "',actualpoint = '" + devices[dvc]['datapoint'][dp]['actualpoint'] + "',multiply = '" + devices[dvc]['datapoint'][dp]['multiply'] + "', addition ='" + devices[dvc]['datapoint'][dp]['addition'] + "', objtype = '" + devices[dvc]['datapoint'][dp]['objtype'] + "',objinstance = '" + devices[dvc]['datapoint'][dp]['objinstance'] + "',devicerecordid = " + existingDeviceIdWithRecordId[devices[dvc]['deviceid']] + ",isenergyvalue = '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "' where datapointid = " + devices[dvc]['datapoint'][dp]['datapointid'] + "; "
+              DPAuditAddSQL += DPupdateQueryForOldDevice
+
+
+            }
+          }
+          //console.log(query3)
+
+        }
+      }
+      console.log(DPupdateQueryForOldDevice)
+
+      //await request.query(DPupdateQueryForOldDevice)
+      await request.query(DPAuditAddSQL)
+
+    } else {
+
+      DPAddQueryForOldDevice = ""
+      DPAuditAddSQL = ""
+
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (existingDeviceId.includes(devices[dvc]['deviceid']) == true) {// for already added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] == null) {
+              //arrayId = findValueIndex(newDeviceId, devices[dvc]['deviceid'])
+              DPAddQueryForOldDevice += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPoint ( deviceid, pointid,actualpoint,multiply,addition,dated,objtype,objinstance,devicerecordid,isenergyvalue) VALUES "
+              DPAddQueryForOldDevice += "('" + devices[dvc]['deviceid'] + "','" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + devices[dvc]['datapoint'][dp]['multiply'] + "','" + devices[dvc]['datapoint'][dp]['addition'] + "', CURRENT_TIMESTAMP, '" + devices[dvc]['datapoint'][dp]['objtype'] + "', '" + devices[dvc]['datapoint'][dp]['objinstance'] + "', " + existingDeviceIdWithRecordId[devices[dvc]['deviceid']] + ", '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "');"
+
+              DPAuditAddSQL += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPointAudit ( datapointid, pointid,actualpoint,modifier,event,previousrecord,currentrecord,dated) VALUES "
+              DPAuditAddSQL += "((SELECT TOP (1) [recordid] FROM [" + dbName + "].[ECCAnalytics].[DataPointAudit] order by recordid desc),'" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + modifier + "','add','','', CURRENT_TIMESTAMP);"
+              DPAddQueryForOldDevice += DPAuditAddSQL
+
+            }
+          }
+          //console.log(query3)
+
+        }
+      }
+      await request.query(DPAddQueryForOldDevice)
+
+
+      DPupdateQueryForOldDevice = ""
+       DPAuditAddSQL = ""
+     for (dvc = 0; dvc < devices.length; dvc++) {
+        if (existingDeviceId.includes(devices[dvc]['deviceid']) == true) {// for update of already added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] != null) {
+              //DPupdateQueryForOldDevice += " UPDATE ["+dbName+"].[ECCAnalytics].[DataPoint] SET  pointid = '"+devices[dvc]['datapoint'][dp]['pointid']+"',actualpoint = '"+devices[dvc]['datapoint'][dp]['actualpoint']+"',multiply = '"+devices[dvc]['datapoint'][dp]['multiply']+"', addition ='"+devices[dvc]['datapoint'][dp]['addition']+"', objtype = '"+devices[dvc]['datapoint'][dp]['objtype']+"',objinstance = '"+devices[dvc]['datapoint'][dp]['objinstance']+"',isenergyvalue = '"+devices[dvc]['datapoint'][dp]['isenergyvalue']+"' where datapointid = "+devices[dvc]['datapoint'][dp]['datapointid']+"; "
+              pointid =  devices[dvc]['datapoint'][dp]['pointid']
+              deviceid = devices[dvc]['deviceid']
+              DPAuditAddSQL += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPointAudit ( datapointid, pointid,actualpoint,modifier,event,previousrecord,currentrecord,dated) VALUES "
+              DPAuditAddSQL += "("+devices[dvc]['datapoint'][dp]['datapointid']+",'" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + modifier + "','update',(SELECT [actualpoint] FROM [" + dbName + "].[ECCAnalytics].[DataPointAudit] where datapointid = " + devices[dvc]['datapoint'][dp]['datapointid'] + "),'"+pointid+","+deviceid+"', CURRENT_TIMESTAMP);"
+              DPupdateQueryForOldDevice += " UPDATE [" + dbName + "].[ECCAnalytics].[DataPoint] SET deviceid = '" + devices[dvc]['deviceid'] + "',  pointid = '" + devices[dvc]['datapoint'][dp]['pointid'] + "',actualpoint = '" + devices[dvc]['datapoint'][dp]['actualpoint'] + "',multiply = '" + devices[dvc]['datapoint'][dp]['multiply'] + "', addition ='" + devices[dvc]['datapoint'][dp]['addition'] + "', objtype = '" + devices[dvc]['datapoint'][dp]['objtype'] + "',objinstance = '" + devices[dvc]['datapoint'][dp]['objinstance'] + "',isenergyvalue = '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "' where datapointid = " + devices[dvc]['datapoint'][dp]['datapointid'] + "; "
+              DPAuditAddSQL += DPupdateQueryForOldDevice
+
+            }
+          }
+          //console.log(query3)
+
+        }
+      }
+
+      //await request.query(DPupdateQueryForOldDevice)
+      await request.query(DPAuditAddSQL)
+
+
+    }
+    return res.status(200).json('success');
+
+
+  } //end try block
+
+
+
+
+  catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+
+  }
+
+
+
+}
 
 
 
 
 
-const addsubequipment_7_7_2024 = (req, res) => {
+
+const addsubequipment = (req, res) => {
   console.log(req.originalUrl);
 
   dbName = config.databse
@@ -2871,34 +2722,8 @@ const addsubequipment_7_7_2024 = (req, res) => {
 }
 
 
-const addsubequipment = async (req, res) => {
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
 
-
-  try {
-    equipmenttype = req.body.equipmenttype
-    subequipmenttype = req.body.subequipmenttype
-
-    await pool.connect();
-    const request = pool.request();
-
-    query = "INSERT INTO [" + dbName + "].ECCAnalytics.SubEquipments (equipmenttype,subequipmenttype) VALUES ('" + equipmenttype + "','" + subequipmenttype + "')"
-    await request.query(query)
-    data = { 'status': 'success' }
-    return res.status(200).json(data)
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-}
-
-
-const addequipment_7_7_2024 = (req, res) => {
+const addequipment = (req, res) => {
   console.log(req.originalUrl);
 
   dbName = config.databse
@@ -2929,29 +2754,55 @@ const addequipment_7_7_2024 = (req, res) => {
 }
 
 
-const addequipment = async (req, res) => {
-  console.log(req.originalUrl)
+const equipmentvariable = async (req, res) => {
+  console.log(req.originalUrl);
   dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
 
-
+  equipmentid = req.query.eqptid
+  associatedequipid = req.query.aeid
+  equipmentname = req.query.equipmentname
+  //  sql.connect(config,function(err){
   try {
-    equipmenttype = req.body.equipmenttype
 
-    await pool.connect();
-    const request = pool.request();
+    await sql.connect(config)
+    //if(err)conole.log(err)
 
-    query = "INSERT INTO [" + dbName + "].ECCAnalytics.Equipments_Old (equipmenttype) VALUES ('" + equipmenttype + "')"
-    await request.query(query)
-    data = { 'status': 'success' }
+
+    var request = new sql.Request();
+
+
+    var data = [];
+    equipmentQuery = " select FHT.pointid,FHT.associatedequipid,FHT.evarid,FHT.evardesc,FHT.linkedptid,SHT.actualpoint from (select * from (select [T1].[pointid], [T1].[pointdesc],[T2].[associatedequipid] from [ECC_DEV].[ECCAnalytics].[PointType] T1 "
+    equipmentQuery += " left join [ECC_DEV].ECCAnalytics.AssociatedEquipments_DataPoints T2 on [T1].[pointid] =  [T2].[pointid] "
+    equipmentQuery += " where [T2].equipmentid ='" + equipmentid + "' and [T2].associatedequipid  in(" + associatedequipid + ") ) as T3 "
+    equipmentQuery += " inner join [ECC_DEV].ECCAnalytics.EquipmentVariables T4 on T3.pointid = T4.[linkedptid ]) FHT "
+    equipmentQuery += " left join (  SELECT  pointid, DP.actualpoint,DP.deviceid "
+    equipmentQuery += " FROM [ECC_DEV].[ECCAnalytics].[DataPoint] DP inner join "
+    equipmentQuery += " [ECC_DEV].[ECCAnalytics].[Devices] DV on DP.devicerecordid = DV.recordid "
+    equipmentQuery += " where DV.equipmentname = '" + equipmentname + "') SHT on FHT.pointid = SHT.pointid "
+    records = await request.query(equipmentQuery)
+
+    if (records['recordsets'][0].length > 0) {
+
+
+      for (var i = 0; i < records['recordsets'][0].length; i++) {
+        if (records['recordsets'][0][i]['actualpoint'] != null) {
+          data.push({ pointid: records['recordsets'][0][i]['pointid'], associatedequipid: records['recordsets'][0][i]['associatedequipid'], evarid: records['recordsets'][0][i]['evarid'], linkedptid: records['recordsets'][0][i]['linkedptid'], evardesc: records['recordsets'][0][i]['evardesc'], actualpoint: records['recordsets'][0][i]['actualpoint'] });
+        } else {
+          data.push({ pointid: records['recordsets'][0][i]['pointid'], associatedequipid: records['recordsets'][0][i]['associatedequipid'], evarid: records['recordsets'][0][i]['evarid'], linkedptid: records['recordsets'][0][i]['linkedptid'], evardesc: records['recordsets'][0][i]['evardesc'], actualpoint: null });
+        }
+      }
+
+    }
+    sql.close()
+
     return res.status(200).json(data)
   } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
+    console.error(err);
+    return res.status(500).json({ error: 'Internal Server Error' });
 
+  }
+  //  })
 }
 
 const equipmentlist_old = (req, res) => {
@@ -3018,7 +2869,7 @@ const equipmentlist = async (req, res) => {
 
 
 
-const updateproject_4_7_2024 = (req, res) => {
+const updateproject_27_6_2024 = (req, res) => {
   console.log(req.originalUrl);
 
   dbName = config.databse
@@ -3286,8 +3137,7 @@ const updateproject = async (req, res) => {
 
 }
 
-
-const getdatapointsforconfig_7_7_2024 = (req, res) => {
+const getdatapointsforconfig = (req, res) => {
   console.log(req.originalUrl);
 
   //ruleid = req.body.ruleid
@@ -3332,39 +3182,8 @@ const getdatapointsforconfig_7_7_2024 = (req, res) => {
 
 
 
-const getdatapointsforconfig = async (req, res) => {
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
 
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    eqpname = req.query.eqpname
-    query = "SELECT DV.[equipmentname],DV.[deviceid],DV.[ip],DV.[port],DV.[network],DV.[manufacturer],DV.[modelname],[datapointid],[pointid],[actualpoint],[multiply],[addition],[dated],[objtype],[objinstance],[devicerecordid],[isenergyvalue] FROM [" + dbName + "].[ECCAnalytics].DataPoint DP "
-    query += " left join [" + dbName + "].[ECCAnalytics].[Devices] DV on [DP].[devicerecordid] = [DV].[recordid] where DV.equipmentname = '" + eqpname + "';"
-    records = await request.query(query)
-
-    var data = [];
-    for (var i = 0; i < records['recordsets'][0].length; i++) {
-      //data.push({datapointid: records['recordsets'][0][i]['datapointid'],deviceid: records['recordsets'][0][i]['deviceid'],datapoint: records['recordsets'][0][i]['datapoint'],actualpoint: records['recordsets'][0][i]['actualpoint'], multiply: records['recordsets'][0][i]['multiply'],addition: records['recordsets'][0][i]['addition'],time: records['recordsets'][0][i]['dated'],type: records['recordsets'][0][i]['objtype'],instance: records['recordsets'][0][i]['objinstance']});
-      data.push({ datapointid: records['recordsets'][0][i]['datapointid'], deviceid: records['recordsets'][0][i]['deviceid'], pointid: records['recordsets'][0][i]['pointid'], actualpoint: records['recordsets'][0][i]['actualpoint'], multiply: records['recordsets'][0][i]['multiply'], addition: records['recordsets'][0][i]['addition'], time: records['recordsets'][0][i]['dated'], objtype: records['recordsets'][0][i]['objtype'], objinstance: records['recordsets'][0][i]['objinstance'], devicerecordid: records['recordsets'][0][i]['devicerecordid'] });
-      //DATA.    ({'recordid': row[0],'projname': row[1],'projdesc' : row[2],'countryname' : row[3],'countrydesc' : row[4],'cityname' : row[5],'citydesc' : row[6],'campusname' : row[7],'campusdesc' : row[8],'buildingname' : row[9],'buildingdesc' : row[10],'equipmentname' : row[11],'equipmenttype' : row[12],'subequipmentname' : row[13],'subequipmentdesc' : row[14]})
-    }
-    return res.status(200).json(records['recordsets'][0])
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-}
-
-
-const updatedatapoint_7_7_2024 = (req, res) => {
+const updatedatapoint = (req, res) => {
   console.log(req.originalUrl);
 
   dbName = config.databse
@@ -3419,58 +3238,8 @@ const updatedatapoint_7_7_2024 = (req, res) => {
 }
 
 
-const updatedatapoint = async (req, res) => {
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-  //  username = req.body.username
 
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    datapointid = req.query.datapointid
-    query = ""
-    if (typeof req.body.multiply !== 'undefined') {
-      multiply = req.body.multiply
-
-      //query = "update ["+dbName+"].[ECCAnalytics].[Users]  set [roles] = '"+req.body.roles+"'where username = '"+username+"'";
-      query = "update [" + dbName + "].[ECCAnalytics].[DataPoint]  set [multiply] = '" + req.body.multiply + "'where datapointid = '" + datapointid + "'";
-
-    }
-
-
-    if (typeof req.body.addition !== 'undefined') {
-
-      //query = "update ["+dbName+"].[ECCAnalytics].[Users]  set [pswd] = '"+req.body.pswd+"' where username = '"+username+"'";
-      query = "update [" + dbName + "].[ECCAnalytics].[DataPoint]  set [addition] = '" + req.body.addition + "' where datapointid = '" + datapointid + "'";
-
-    }
-
-
-    if (typeof req.body.multiply !== 'undefined' && typeof req.body.addition !== 'undefined') {
-
-      query = "update [" + dbName + "].[ECCAnalytics].[DataPoint]  set [multiply] = '" + req.body.multiply + "', [addition] = '" + req.body.addition + "' where datapointid = '" + datapointid + "'";
-
-    }
-
-    records = await request.query(query)
-    return res.status(200).json('success')
-
-
-  } catch (err) {
-    return res.status(200).json('failed')
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-
-
-}
-
-
-const deletedatapoint_7_7_2024 = (req, res) => {
+const deletedatapoint = (req, res) => {
   console.log(req.originalUrl);
 
   dbName = config.databse
@@ -3514,45 +3283,8 @@ const deletedatapoint_7_7_2024 = (req, res) => {
 }
 
 
-const deletedatapoint = async (req, res) => {
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
 
-  //  username = req.body.username
-
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    datapointid = req.query.datapointid
-    query = ""
-    if (typeof req.query.datapointid !== 'undefined') {
-
-      //query = "update ["+dbName+"].[ECCAnalytics].[Users]  set [roles] = '"+req.body.roles+"'where username = '"+username+"'";
-      query = "delete from [" + dbName + "].[ECCAnalytics].[DataPoint]  where datapointid = '" + datapointid + "'";
-
-    } else {
-      return res.status(200).json('failed')
-    }
-
-    records = await request.query(query)
-    return res.status(200).json('success')
-
-  } catch (err) {
-    return res.status(200).json('failed')
-  } finally {
-    // Close the connection pool
-    pool.close();
-  }
-
-
-
-}
-
-
-const updateuserpassword_7_7_2024 = (req, res) => {
+const updateuserpassword = (req, res) => {
   console.log(req.originalUrl);
   //ruleid = req.body.ruleid
 
@@ -3603,31 +3335,43 @@ const updateuserpassword_7_7_2024 = (req, res) => {
 }
 
 
-const updateuserpassword = async (req, res) => {
+
+const getbuildingvariablevalue = async (req, res) => {
+
   console.log(req.originalUrl)
   dbName = config.databse
-  const pool = new sql.ConnectionPool(config);  //ruleid = req.body.ruleid
-
+  const pool = new sql.ConnectionPool(config);
 
   try {
     await pool.connect();
     const request = pool.request();
 
-    username = req.body.username
-    oldpass = req.body.oldpass
-    newpassword = req.body.newpassword
+    buildingName = req.query.buildingname
+    bvarid = req.query.bvarid
+    cvarid = 'CVAR-' + bvarid.split("-")[1]
+    BVOTableSQL = "select * FROM [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation]  where [buildingname] = '" + buildingName + "' and [bvarid] = '" + bvarid + "';"
+    records = await request.query(BVOTableSQL)
+    if (records['recordsets'][0].length > 0) {
+      return res.status(200).json({ "bvarvalue": records['recordsets'][0][0]['bvarvalue'] })
+    } else {
+      splittedValue = bvarid.split("-")
+      buildingSQL = "select campusname FROM [" + dbName + "].[ECCAnalytics].[Buildings]  where [buildingname] = '" + buildingName + "';"
 
-    var data = [];
-    query = "SELECT * FROM [" + dbName + "].ECCAnalytics.Users where username ='" + username + "' and pswd ='" + oldpass + "'"
-    records = await request.query(query)
+      records = await request.query(buildingSQL)
+      if (records['recordsets'][0].length < 1) {
+        return res.status(200).json('no data')
 
-    if (records['recordsets'][0].length == 0) {
-      return res.status(200).json('not found')
-    }
-    else {
-      query = "update [" + dbName + "].[ECCAnalytics].[Users] set pswd = '" + newpassword + "' where  username = '" + username + "' and pswd = '" + oldpass + "'"
-      await request.query(query)
-      return res.status(200).json('updated')
+      }
+      campusName = records['recordsets'][0][0]['campusname']
+
+      campusVarOpSQL = "select * FROM [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation]  where [campusname] = '" + campusName + "' and [cvarid] = '" + cvarid + "';"
+      campusVarOpRecords = await request.query(campusVarOpSQL)
+
+      if (campusVarOpRecords['recordsets'][0].length > 0) {
+        return res.status(200).json({ "cvarvalue": campusVarOpRecords['recordsets'][0][0]['cvarvalue'] })
+      } else {
+        return res.status(200).json('no data')
+      }
 
     }
   } catch (err) {
@@ -3635,191 +3379,100 @@ const updateuserpassword = async (req, res) => {
   } finally {
     // Close the connection pool
     pool.close();
+
   }
+
 
 }
 
+/*********************************************TEST API ********************************************************* */
+const test = (req, res) => {
+  var qid = req.query.id;
+  //alarmid = req.body.alarmid
 
-const equipmentvariable = async (req, res) => {
-  console.log(req.originalUrl);
-  dbName = config.databse
+  function downloadPage(eqpname, deviceid) {
+    dbName = config.databse
 
-  equipmentid = req.query.eqptid
-  associatedequipid = req.query.aeid
-  equipmentname = req.query.equipmentname
-  //  sql.connect(config,function(err){
-  try {
-
-    await sql.connect(config)
-    //if(err)conole.log(err)
-
-
-    var request = new sql.Request();
-
-
-    var data = [];
-    equipmentQuery = " select FHT.pointid,FHT.associatedequipid,FHT.evarid,FHT.evardesc,FHT.linkedptid,SHT.actualpoint from (select * from (select [T1].[pointid], [T1].[pointdesc],[T2].[associatedequipid] from [ECC_DEV].[ECCAnalytics].[PointType] T1 "
-    equipmentQuery += " left join [ECC_DEV].ECCAnalytics.AssociatedEquipments_DataPoints T2 on [T1].[pointid] =  [T2].[pointid] "
-    equipmentQuery += " where [T2].equipmentid ='" + equipmentid + "' and [T2].associatedequipid  in(" + associatedequipid + ") ) as T3 "
-    equipmentQuery += " inner join [ECC_DEV].ECCAnalytics.EquipmentVariables T4 on T3.pointid = T4.[linkedptid ]) FHT "
-    equipmentQuery += " left join (  SELECT  pointid, DP.actualpoint,DP.deviceid "
-    equipmentQuery += " FROM [ECC_DEV].[ECCAnalytics].[DataPoint] DP inner join "
-    equipmentQuery += " [ECC_DEV].[ECCAnalytics].[Devices] DV on DP.devicerecordid = DV.recordid "
-    equipmentQuery += " where DV.equipmentname = '" + equipmentname + "') SHT on FHT.pointid = SHT.pointid "
-    records = await request.query(equipmentQuery)
-
-    if (records['recordsets'][0].length > 0) {
-
-
-      for (var i = 0; i < records['recordsets'][0].length; i++) {
-        if (records['recordsets'][0][i]['actualpoint'] != null) {
-          data.push({ pointid: records['recordsets'][0][i]['pointid'], associatedequipid: records['recordsets'][0][i]['associatedequipid'], evarid: records['recordsets'][0][i]['evarid'], linkedptid: records['recordsets'][0][i]['linkedptid'], evardesc: records['recordsets'][0][i]['evardesc'], actualpoint: records['recordsets'][0][i]['actualpoint'] });
-        } else {
-          data.push({ pointid: records['recordsets'][0][i]['pointid'], associatedequipid: records['recordsets'][0][i]['associatedequipid'], evarid: records['recordsets'][0][i]['evarid'], linkedptid: records['recordsets'][0][i]['linkedptid'], evardesc: records['recordsets'][0][i]['evardesc'], actualpoint: null });
+    return new Promise((resolve, reject) => {
+      query = "select count(*) as total from  [" + dbName + "].ECCAnalytics.Devices where equipmentname ='" + eqpname + "' and deviceid = '" + deviceid + "'"
+      sql.connect(config, function (err) {
+        if (err) {
+          console.log('Erro is coming')
+          reject(err)
         }
-      }
+        else console.log('conected')
 
-    }
-    sql.close()
+        // make a request as
 
-    return res.status(200).json(data)
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+        var request = new sql.Request();
+        //console.log(request)
 
+        request.query(query, function (err, records) {
+          if (err) {
+            console.log(err);
+            reject(err)
+            return query
+          }
+          else {
+            // console.log(records['recordsets'][0][0].total);
+
+            resolve(records['recordsets'][0][0].total)
+            //return records['recordsets'][0]
+            // return 1
+
+          }
+
+        })
+      })
+
+
+    });
   }
-  //  })
-}
 
-const getequipmentvariable = async (req, res) => {
-  console.log(req.originalUrl)
-  dbName = config.databse
+  async function myBackEndLogic(eqpname, deviceid) {
+    try {
+      const html = await downloadPage(eqpname, deviceid)
+      console.log('SHOULD WORK:');
+      console.log(html);
+      //return html;
+
+      // try downloading an invalid url
+      // await downloadPage('http://      .com')
+    } catch (error) {
+      console.error('ERROR:');
+      console.error(error);
+    }
+  }
+  myBackEndLogic('A2-1F-AHU1', '1010101');
+  myBackEndLogic('A2-1F-AHU1', '3610796');
+  myBackEndLogic('A2-1F-AHU1', '361079699');
+
+  //     console.log(page);
+
+  return 0
+  //return res.status(200).json(qid)
+
+
   const pool = new sql.ConnectionPool(config);
 
-  aeid = req.query.aeid
-  eqpid = req.query.eqpid
-
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-
-    query = "SELECT pointid, associatedequiptype, b.evardesc,c.associatedequipid, evarid "
-    query += "FROM [" + dbName + "].[ECCAnalytics].[AssociatedEquipments_DataPoints] a "
-    query += " inner join [" + dbName + "].[ECCAnalytics].[EquipmentVariables] b on a.pointid = b.[linkedptid ] "
-    query += " left join [" + dbName + "].[ECCAnalytics].[AssociatedEquipments] c on a.[associatedequipid] = c.[associatedequipid] "
-    //query += " where a.associatedequipid = '" + aeid + "' and a.[equipmentid] = '" + eqpid + "'; "
-    query += " where a.[equipmentid] = '" + eqpid + "'  and a.associatedequipid in (" + aeid + "); "
-    records = await request.query(query)
-
-    return res.status(200).json(records['recordsets'][0])
-
-  } catch (err) {
-    console.error(err);
-    console.error(query);
-    return res.status(500).json('failed');
-
-  } finally {
-
-    pool.close();
-
-
-  }
+  // Connect to the SQL Server
+  pool.connect().then(() => {
+    // Query example
+    pool.request().query('SELECT TOP (1000) [recordid],[campusname],[buildingname] FROM [ECCDB].[ECCAnalytics].[Buildings]').then(result => {
+      console.log(result.recordset);
+      return res.status(200).json(result.recordset)
+    }).catch(err => {
+      console.error('Error executing query:', err);
+    }).finally(() => {
+      // Close the connection pool
+      pool.close();
+    });
+  }).catch(err => {
+    console.error('Error connecting to SQL Server:', err);
+  });
 
 
 }
-
-
-const addequipmentvariableopration = async (req, res) => {
-
-  console.log(req.originalUrl);
-  dbName = config.databse
-
-
-  equipmentvariabledata = req.body.equipmentvariabledata
-  modifier = req.query.modifier
-  auditData = ""
-
-  try {
-
-    await sql.connect(config)
-
-    var request = new sql.Request();
-    equipmentVariableQuery = ""
-    auditQuery = ""
-    for (i = 0; i < equipmentvariabledata.length; i++) {
-      if (equipmentvariabledata[i].recordid == null) {
-        equipmentVariableQuery += "insert into [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation]  (evarid,linkedptid,projectrecordid,equipmentname,evarvalue,isenergyvalue,dated) values ('" + equipmentvariabledata[i].evarid + "','" + equipmentvariabledata[i].linkedptid + "','" + equipmentvariabledata[i].projectrecordid + "','" + equipmentvariabledata[i].equipmentname + "','" + equipmentvariabledata[i].evarvalue + "','" + equipmentvariabledata[i].isenergyvalue + "', CURRENT_TIMESTAMP); "
-        //auditData += equipmentvariabledata[i].evarvalue+", " 
-        auditQuery += " INSERT INTO [" + dbName + "].ECCAnalytics.EquipmentVarOperationAudit (evarid,equipmentname,linkedptid,event,currentrecord,dated,modifier) VALUES ('" + equipmentvariabledata[i].evarid + "','" + equipmentvariabledata[i].equipmentname + "', '" + equipmentvariabledata[i].linkedptid + "','add','" + equipmentvariabledata[i].evarvalue + "',CURRENT_TIMESTAMP,'" + modifier + "'); "
-        equipmentVariableQuery += auditQuery
-        await request.query(equipmentVariableQuery)
-
-      } else {
-        equipmentVariableQuery += "update [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation]  set evarvalue =  '" + equipmentvariabledata[i].evarvalue + "' where recordid =  " + equipmentvariabledata[i].recordid + "; "
-        auditQuery += " INSERT INTO [" + dbName + "].ECCAnalytics.EquipmentVarOperationAudit (evarid,equipmentname,linkedptid,event,previousrecord,currentrecord,dated,modifier) VALUES ('" + equipmentvariabledata[i].evarid + "','" + equipmentvariabledata[i].equipmentname + "', '" + equipmentvariabledata[i].linkedptid + "','update',(SELECT [evarvalue]  FROM [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where  recordid = '" + equipmentvariabledata[i].recordid + "'), '" + equipmentvariabledata[i].evarvalue + "',CURRENT_TIMESTAMP,'" + modifier + "'); "
-        auditQuery += equipmentVariableQuery
-
-        await request.query(auditQuery)
-
-      }
-    }
-    // console.error(auditQuery);
-
-    //equipmentVariableQuery += auditQuery
-
-    sql.close()
-
-    return res.status(200).json({ "status": "success" })
-  } catch (err) {
-    console.error(auditQuery);
-    return res.status(500).json({ error: 'Internal Server Error' });
-
-  }
-
-
-}
-
-const deleteequipmentvariableoperation = async (req, res) => {
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-
-  recordid = req.query.id
-  modifier = req.body.modifier
-  //bvarvalue = req.body.bvarvalue
-
-  updateuser_query = ""
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-
-    deleteSql = " delete from [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where  recordid = " + recordid + "; "
-    auditQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.EquipmentVarOperationAudit (evarid,equipmentname,linkedptid,event,dated) VALUES ((SELECT [evarid]  FROM [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where  recordid = '" + recordid + "'),(SELECT [equipmentname]  FROM [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where  recordid = '" + recordid + "'), (SELECT [linkedptid]  FROM [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where  recordid = '" + recordid + "'),'delete',CURRENT_TIMESTAMP); "
-
-    auditQuery += deleteSql
-    await request.query(auditQuery)
-    return res.status(200).json('success')
-
-  } catch (err) {
-    console.error(deleteSql);
-    console.log(updateuser_query);
-    return res.status(500).json('failed');
-
-  } finally {
-
-    pool.close();
-
-
-  }
-
-
-}
-
 
 
 const bulkalarmdata = (req, res) => {
@@ -4031,118 +3684,6 @@ const campusvariable = async (req, res) => {
 }
 
 
-const addbuildingvariable = async (req, res) => {
-
-  console.log(req.originalUrl);
-  dbName = config.databse
-
-  buildingvariabledata = req.body.buildingvariabledata
-
-
-  try {
-
-    await sql.connect(config)
-
-    var request = new sql.Request();
-    buildingQuery = ""
-    for (i = 0; i < buildingvariabledata.length; i++) {
-
-      buildingQuery += "insert into [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation]  (bvarid,buildingname,bvarvalue,dated) values ('" + buildingvariabledata[i].bvarid + "','" + buildingvariabledata[i].buildingname + "','" + buildingvariabledata[i].bvarvalue + "', CURRENT_TIMESTAMP)"
-    }
-    await request.query(buildingQuery)
-
-    sql.close()
-
-    return res.status(200).json({ "status": "success" })
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Internal Server Error' });
-
-  }
-
-
-}
-
-
-const addcampusvariable = async (req, res) => {
-
-  console.log(req.originalUrl);
-  dbName = config.databse
-
-
-  campusvariabledata = req.body.campusvariabledata
-
-  try {
-
-    await sql.connect(config)
-
-    var request = new sql.Request();
-    campusQuery = ""
-    for (i = 0; i < campusvariabledata.length; i++) {
-      campusQuery += "insert into [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation]  (cvarid,campusname,cvarvalue,dated) values ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "','" + campusvariabledata[i].cvarvalue + "', CURRENT_TIMESTAMP);"
-    }
-    await request.query(campusQuery)
-
-    sql.close()
-
-    return res.status(200).json({ "status": "success" })
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Internal Server Error' });
-
-  }
-
-
-}
-
-
-const retrieveequipmentvariable = async (req, res) => {
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-  aeid = req.query.aeid
-  equipmentname = req.query.eqpname
-
-  finalResult = { "equipmentvarop": {}, "datapoint": {} }
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-
-    queryEqpVarOpSQL = "SELECT [recordid],[evarid],[linkedptid],[projectrecordid],[equipmentname],[evarvalue],[dated]"
-    queryEqpVarOpSQL += " FROM [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where equipmentname = '" + equipmentname + "' "
-    queryEqpVarOpRecords = await request.query(queryEqpVarOpSQL)
-
-    finalResult.equipmentvarop = queryEqpVarOpRecords['recordsets'][0]
-
-    datapointTableDataSQL = " SELECT [datapointid],[deviceid],[pointid],[actualpoint],[isenergyvalue] "
-    datapointTableDataSQL += " FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in (SELECT [recordid]  FROM [" + dbName + "].[ECCAnalytics].[Devices] where equipmentname = '" + equipmentname + "') "
-    datapointTableRecords = await request.query(datapointTableDataSQL)
-
-    finalResult.datapoint = datapointTableRecords['recordsets'][0]
-
-    return res.status(200).json(finalResult)
-
-
-
-  } catch (err) {
-    console.error(err);
-    console.error(deletequery);
-    return res.status(500).json('failed');
-
-  } finally {
-
-    pool.close();
-
-
-  }
-
-
-}
-
-
 const addbuildingvariableoperation = async (req, res) => {
 
   console.log(req.originalUrl);
@@ -4168,11 +3709,11 @@ const addbuildingvariableoperation = async (req, res) => {
       addBuildingSQL += "  IF (NOT EXISTS(SELECT * FROM [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] WHERE bvarid = '" + buildingvariabledata[i].bvarid + "' and buildingname = '" + buildingvariabledata[i].buildingname + "') ) "
       addBuildingSQL += " BEGIN "
       addBuildingSQL += "  INSERT INTO  [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation]( bvarid,buildingname,bvarvalue,dated)  VALUES('" + buildingvariabledata[i].bvarid + "', '" + buildingvariabledata[i].buildingname + "', '" + buildingvariabledata[i].bvarvalue + "', CURRENT_TIMESTAMP) "
-      addBuildingSQL += " INSERT INTO  [" + dbName + "].[ECCAnalytics].BuildingVarOperationAudit (bvarid,buildingname,event,currentrecord,dated) VALUES ('" + buildingvariabledata[i].bvarid + "','" + buildingvariabledata[i].buildingname + "', 'add', '" + buildingvariabledata[i].bvarvalue + "',CURRENT_TIMESTAMP); "
+      addBuildingSQL += " INSERT INTO  [" + dbName + "].[ECCAnalytics].BuildingVarOperationAudit (bvarid,buildingname,event,currentrecord,dated,modifier) VALUES ('" + buildingvariabledata[i].bvarid + "','" + buildingvariabledata[i].buildingname + "', 'add', '" + buildingvariabledata[i].bvarvalue + "',CURRENT_TIMESTAMP,'" + modifier + "'); "
       addBuildingSQL += " END  "
       addBuildingSQL += " ELSE "
       addBuildingSQL += " BEGIN  "
-      addBuildingSQL += " INSERT INTO  [" + dbName + "].[ECCAnalytics].BuildingVarOperationAudit (bvarid,buildingname,event,previousrecord,currentrecord,dated) VALUES ('" + buildingvariabledata[i].bvarid + "','" + buildingvariabledata[i].buildingname + "', 'update',(SELECT bvarvalue FROM  [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] WHERE bvarid = '" + buildingvariabledata[i].bvarid + "' and buildingname = '" + buildingvariabledata[i].buildingname + "'), '" + buildingvariabledata[i].bvarvalue + "',CURRENT_TIMESTAMP); "
+      addBuildingSQL += " INSERT INTO  [" + dbName + "].[ECCAnalytics].BuildingVarOperationAudit (bvarid,buildingname,event,previousrecord,currentrecord,dated,modifier) VALUES ('" + buildingvariabledata[i].bvarid + "','" + buildingvariabledata[i].buildingname + "', 'update',(SELECT bvarvalue FROM  [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] WHERE bvarid = '" + buildingvariabledata[i].bvarid + "' and buildingname = '" + buildingvariabledata[i].buildingname + "'), '" + buildingvariabledata[i].bvarvalue + "',CURRENT_TIMESTAMP,'" + modifier + "'); "
       addBuildingSQL += " UPDATE  [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] "
       addBuildingSQL += " SET bvarvalue = '" + buildingvariabledata[i].bvarvalue + "' "
       addBuildingSQL += " WHERE  bvarid = '" + buildingvariabledata[i].bvarid + "' and buildingname = '" + buildingvariabledata[i].buildingname + "'; "
@@ -4181,7 +3722,7 @@ const addbuildingvariableoperation = async (req, res) => {
     }
     buildingQuery += auditQuery
     await request.query(addBuildingSQL)
-    console.log(addBuildingSQL)
+console.log(addBuildingSQL)
     sql.close()
 
     return res.status(200).json({ "status": "success" })
@@ -4190,6 +3731,243 @@ const addbuildingvariableoperation = async (req, res) => {
     console.log(addBuildingSQL)
 
     return res.status(500).json({ error: 'Internal Server Error' });
+
+  }
+
+
+}
+
+
+const deletebuildingvariableoperation = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+
+  recordid = req.query.id
+  modifier = req.query.modifier
+  bvarvalue = req.body.bvarvalue
+
+  updateuser_query = ""
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+
+    deleteSql = " delete from [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] where  recordid = " + recordid + "; "
+    auditQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.BuildingVarOperationAudit (bvarid,buildingname,event,dated,modifier) VALUES ((SELECT [bvarid]  FROM [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] where  recordid = '" + recordid + "'),(SELECT [buildingname]  FROM [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] where  recordid = '" + recordid + "'), 'delete',CURRENT_TIMESTAMP,'"+modifier+"'); "
+
+    auditQuery += deleteSql
+    await request.query(auditQuery)
+    return res.status(200).json('success')
+
+  } catch (err) {
+    console.error(deleteSql);
+    console.log(updateuser_query);
+    return res.status(500).json('failed');
+
+  } finally {
+
+    pool.close();
+
+
+  }
+
+
+}
+
+const addcampusvariableoperation = async (req, res) => {
+
+  console.log(req.originalUrl);
+  dbName = config.databse
+
+
+  campusvariabledata = req.body.campusvariabledata
+  modifier = req.query.modifier
+
+  try {
+
+    await sql.connect(config)
+
+    var request = new sql.Request();
+    campusQuery = ""
+    auditQuery = ""
+    addCampusSQL = ""
+    for (i = 0; i < campusvariabledata.length; i++) {
+      campusQuery += "insert into [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation]  (cvarid,campusname,cvarvalue,dated) values ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "','" + campusvariabledata[i].cvarvalue + "', CURRENT_TIMESTAMP);"
+      auditQuery += " INSERT INTO [" + dbName + "].ECCAnalytics.CampusVarOperationAudit (cvarid,campusname,event,currentrecord,dated) VALUES ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "', 'add','" + campusvariabledata[i].cvarvalue + "',CURRENT_TIMESTAMP); "
+
+      addCampusSQL += "  IF (NOT EXISTS(SELECT * FROM [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] WHERE cvarid = '" + campusvariabledata[i].cvarid + "' and campusname = '" + campusvariabledata[i].campusname + "') ) "
+      addCampusSQL += " BEGIN "
+      addCampusSQL += "  INSERT INTO  [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation]( cvarid,campusname,cvarvalue,dated)  VALUES('" + campusvariabledata[i].cvarid + "', '" + campusvariabledata[i].campusname + "', '" + campusvariabledata[i].cvarvalue + "', CURRENT_TIMESTAMP) "
+      addCampusSQL += " INSERT INTO  [" + dbName + "].[ECCAnalytics].CampusVarOperationAudit (cvarid,campusname,event,currentrecord,dated,modifier) VALUES ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "', 'add', '" + campusvariabledata[i].cvarvalue + "',CURRENT_TIMESTAMP,'" + modifier + "'); "
+      addCampusSQL += " END  "
+      addCampusSQL += " ELSE "
+      addCampusSQL += " BEGIN  "
+      addCampusSQL += " INSERT INTO  [" + dbName + "].[ECCAnalytics].CampusVarOperationAudit (cvarid,campusname,event,previousrecord,currentrecord,dated,modifier) VALUES ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "', 'update',(SELECT cvarvalue FROM  [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] WHERE cvarid = '" + campusvariabledata[i].cvarid + "' and campusname = '" + campusvariabledata[i].campusname + "'), '" + campusvariabledata[i].cvarvalue + "',CURRENT_TIMESTAMP,'" + modifier + "'); "
+      addCampusSQL += " UPDATE  [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] "
+      addCampusSQL += " SET cvarvalue = '" + campusvariabledata[i].cvarvalue + "' "
+      addCampusSQL += " WHERE  cvarid = '" + campusvariabledata[i].cvarid + "' and campusname = '" + campusvariabledata[i].campusname + "'; "
+      addCampusSQL += " END ; "
+
+
+
+    }
+    //campusQuery += auditQuery
+    await request.query(addCampusSQL)
+
+    sql.close()
+
+    return res.status(200).json({ "status": "success" })
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+
+  }
+
+
+}
+
+const deletecampusvariableoperation = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+
+  recordid = req.query.id
+  modifier = req.query.modifier
+  bvarvalue = req.body.bvarvalue
+
+  updateuser_query = ""
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+
+    deleteSql = " delete from [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] where  recordid = " + recordid + "; "
+    auditQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.CampusVarOperationAudit (cvarid,campusname,event,dated,modfier) VALUES ((SELECT [cvarid]  FROM [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] where  recordid = '" + recordid + "'),(SELECT [campusname]  FROM [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] where  recordid = '" + recordid + "'), 'delete',CURRENT_TIMESTAMP,'"+modifier+"'); "
+
+    auditQuery += deleteSql
+    await request.query(auditQuery)
+    return res.status(200).json('success')
+
+  } catch (err) {
+    console.error(deleteSql);
+    console.log(updateuser_query);
+    return res.status(500).json('failed');
+
+  } finally {
+
+    pool.close();
+
+
+  }
+
+
+}
+
+
+const addequipmentvariableopration = async (req, res) => {
+
+  console.log(req.originalUrl);
+  dbName = config.databse
+
+
+  equipmentvariabledata = req.body.equipmentvariabledata
+  modifier = req.query.modifier
+  auditData = ""
+
+   try {
+
+    await sql.connect(config)
+
+    var request = new sql.Request();
+    equipmentVariableQuery = ""
+    auditQuery = ""
+    for (i = 0; i < equipmentvariabledata.length; i++) {
+      if(equipmentvariabledata[i].recordid == null){
+      equipmentVariableQuery += "insert into [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation]  (evarid,linkedptid,projectrecordid,equipmentname,evarvalue,dated) values ('" + equipmentvariabledata[i].evarid + "','" + equipmentvariabledata[i].linkedptid + "','" + equipmentvariabledata[i].projectrecordid + "','" + equipmentvariabledata[i].equipmentname + "','" + equipmentvariabledata[i].evarvalue + "', CURRENT_TIMESTAMP); "
+      //auditData += equipmentvariabledata[i].evarvalue+", " 
+      auditQuery += " INSERT INTO [" + dbName + "].ECCAnalytics.EquipmentVarOperationAudit (evarid,equipmentname,linkedptid,event,currentrecord,dated,modifier) VALUES ('" + equipmentvariabledata[i].evarid + "','" + equipmentvariabledata[i].equipmentname + "', '" + equipmentvariabledata[i].linkedptid + "','add','" + equipmentvariabledata[i].evarvalue + "',CURRENT_TIMESTAMP,'" + modifier + "'); "
+      equipmentVariableQuery += auditQuery
+      await request.query(equipmentVariableQuery)
+
+      }else{
+        equipmentVariableQuery += "update [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation]  set evarvalue =  '" + equipmentvariabledata[i].evarvalue + "' where recordid =  " + equipmentvariabledata[i].recordid + "; "
+        auditQuery += " INSERT INTO [" + dbName + "].ECCAnalytics.EquipmentVarOperationAudit (evarid,equipmentname,linkedptid,event,previousrecord,currentrecord,dated,modifier) VALUES ('" + equipmentvariabledata[i].evarid + "','" + equipmentvariabledata[i].equipmentname + "', '" + equipmentvariabledata[i].linkedptid + "','update',(SELECT [evarvalue]  FROM [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where  recordid = '" + equipmentvariabledata[i].recordid + "'), '" + equipmentvariabledata[i].evarvalue + "',CURRENT_TIMESTAMP,'" + modifier + "'); "
+        auditQuery += equipmentVariableQuery
+  
+        await request.query(auditQuery)
+
+      }
+    }
+    console.error(auditQuery);
+
+    //equipmentVariableQuery += auditQuery
+
+    sql.close()
+
+    return res.status(200).json({ "status": "success" })
+  } catch (err) {
+    console.error(auditQuery);
+    return res.status(500).json({ error: 'Internal Server Error' });
+
+  }
+
+
+}
+
+
+
+const updatequipmentvariableoperation = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+
+  recordid = req.query.id
+  modifier = req.body.modifier
+  evarvalue = req.body.evarvalue
+
+  updateuser_query = ""
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+
+    previousValSql = " select * from [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where  recordid = " + recordid + "; "
+    console.log(previousValSql);
+    //return 0;
+    records = await request.query(previousValSql)
+    prevEvarval = records['recordsets'][0][0].evarvalue
+    evarid = records['recordsets'][0][0].evarid
+    equipmentname = records['recordsets'][0][0].equipmentname
+    linkedptid = records['recordsets'][0][0].linkedptid
+
+    updateuser_query = " update [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation]  set evarvalue = '" + evarvalue + "' where recordid = '" + recordid + "'; ";
+
+
+    //insertQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.UserAudit (userid,event,previousrecord,currentrecord,dated) VALUES ('" + username + "','update','" + prevEvarval + "','" + evarvalue + "',CURRENT_TIMESTAMP); "
+    auditQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.EquipmentVarOperationAudit (evarid,equipmentname,linkedptid,event,previousrecord,currentrecord,dated) VALUES ('" + evarid + "','" + equipmentname + "', '" + linkedptid + "','update','" + prevEvarval + "','" + evarvalue + "',CURRENT_TIMESTAMP); "
+
+    updateuser_query += auditQuery
+    console.log(updateuser_query);
+
+    await request.query(updateuser_query)
+    return res.status(200).json('success')
+
+  } catch (err) {
+    console.error(err);
+    console.log(updateuser_query);
+    return res.status(500).json('failed');
+
+  } finally {
+
+    pool.close();
+
 
   }
 
@@ -4248,97 +4026,6 @@ const updatebuildingvariableoperation = async (req, res) => {
 
 }
 
-const deletebuildingvariableoperation = async (req, res) => {
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-
-  recordid = req.query.id
-  modifier = req.query.modifier
-  bvarvalue = req.body.bvarvalue
-
-  updateuser_query = ""
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-
-    deleteSql = " delete from [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] where  recordid = " + recordid + "; "
-    auditQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.BuildingVarOperationAudit (bvarid,buildingname,event,dated,modifier) VALUES ((SELECT [bvarid]  FROM [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] where  recordid = '" + recordid + "'),(SELECT [buildingname]  FROM [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation] where  recordid = '" + recordid + "'), 'delete',CURRENT_TIMESTAMP,'" + modifier + "'); "
-
-    auditQuery += deleteSql
-    await request.query(auditQuery)
-    return res.status(200).json('success')
-
-  } catch (err) {
-    console.error(deleteSql);
-    console.log(updateuser_query);
-    return res.status(500).json('failed');
-
-  } finally {
-
-    pool.close();
-
-
-  }
-
-
-}
-
-const addcampusvariableoperation = async (req, res) => {
-
-  console.log(req.originalUrl);
-  dbName = config.databse
-
-
-  campusvariabledata = req.body.campusvariabledata
-  modifier = req.query.modifier
-
-  try {
-
-    await sql.connect(config)
-
-    var request = new sql.Request();
-    campusQuery = ""
-    auditQuery = ""
-    addCampusSQL = ""
-    for (i = 0; i < campusvariabledata.length; i++) {
-      campusQuery += "insert into [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation]  (cvarid,campusname,cvarvalue,dated) values ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "','" + campusvariabledata[i].cvarvalue + "', CURRENT_TIMESTAMP);"
-      auditQuery += " INSERT INTO [" + dbName + "].ECCAnalytics.CampusVarOperationAudit (cvarid,campusname,event,currentrecord,dated) VALUES ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "', 'add','" + campusvariabledata[i].cvarvalue + "',CURRENT_TIMESTAMP); "
-
-      addCampusSQL += "  IF (NOT EXISTS(SELECT * FROM [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] WHERE cvarid = '" + campusvariabledata[i].cvarid + "' and campusname = '" + campusvariabledata[i].campusname + "') ) "
-      addCampusSQL += " BEGIN "
-      addCampusSQL += "  INSERT INTO  [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation]( cvarid,campusname,cvarvalue,dated)  VALUES('" + campusvariabledata[i].cvarid + "', '" + campusvariabledata[i].campusname + "', '" + campusvariabledata[i].cvarvalue + "', CURRENT_TIMESTAMP) "
-      addCampusSQL += " INSERT INTO  [" + dbName + "].[ECCAnalytics].CampusVarOperationAudit (cvarid,campusname,event,currentrecord,dated) VALUES ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "', 'add', '" + campusvariabledata[i].cvarvalue + "',CURRENT_TIMESTAMP); "
-      addCampusSQL += " END  "
-      addCampusSQL += " ELSE "
-      addCampusSQL += " BEGIN  "
-      addCampusSQL += " INSERT INTO  [" + dbName + "].[ECCAnalytics].CampusVarOperationAudit (cvarid,campusname,event,previousrecord,currentrecord,dated) VALUES ('" + campusvariabledata[i].cvarid + "','" + campusvariabledata[i].campusname + "', 'update',(SELECT cvarvalue FROM  [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] WHERE cvarid = '" + campusvariabledata[i].cvarid + "' and campusname = '" + campusvariabledata[i].campusname + "'), '" + campusvariabledata[i].cvarvalue + "',CURRENT_TIMESTAMP); "
-      addCampusSQL += " UPDATE  [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] "
-      addCampusSQL += " SET cvarvalue = '" + campusvariabledata[i].cvarvalue + "' "
-      addCampusSQL += " WHERE  cvarid = '" + campusvariabledata[i].cvarid + "' and campusname = '" + campusvariabledata[i].campusname + "'; "
-      addCampusSQL += " END ; "
-
-
-
-    }
-    //campusQuery += auditQuery
-    await request.query(addCampusSQL)
-
-    sql.close()
-
-    return res.status(200).json({ "status": "success" })
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Internal Server Error' });
-
-  }
-
-
-}
-
 
 const updatecampusvariableoperation = async (req, res) => {
   console.log(req.originalUrl)
@@ -4389,96 +4076,6 @@ const updatecampusvariableoperation = async (req, res) => {
 
 
 }
-
-const deletecampusvariableoperation = async (req, res) => {
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-
-  recordid = req.query.id
-  modifier = req.query.modifier
-  bvarvalue = req.body.bvarvalue
-
-  updateuser_query = ""
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-
-    deleteSql = " delete from [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] where  recordid = " + recordid + "; "
-    auditQuery = " INSERT INTO [" + dbName + "].ECCAnalytics.CampusVarOperationAudit (cvarid,campusname,event,dated,modfier) VALUES ((SELECT [cvarid]  FROM [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] where  recordid = '" + recordid + "'),(SELECT [campusname]  FROM [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation] where  recordid = '" + recordid + "'), 'delete',CURRENT_TIMESTAMP,'" + modifier + "'); "
-
-    auditQuery += deleteSql
-    await request.query(auditQuery)
-    return res.status(200).json('success')
-
-  } catch (err) {
-    console.error(deleteSql);
-    console.log(updateuser_query);
-    return res.status(500).json('failed');
-
-  } finally {
-
-    pool.close();
-
-
-  }
-
-
-}
-
-
-const getbuildingvariablevalue = async (req, res) => {
-
-  console.log(req.originalUrl)
-  dbName = config.databse
-  const pool = new sql.ConnectionPool(config);
-
-  try {
-    await pool.connect();
-    const request = pool.request();
-
-    buildingName = req.query.buildingname
-    bvarid = req.query.bvarid
-    cvarid = 'CVAR-' + bvarid.split("-")[1]
-    BVOTableSQL = "select * FROM [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation]  where [buildingname] = '" + buildingName + "' and [bvarid] = '" + bvarid + "';"
-    records = await request.query(BVOTableSQL)
-    if (records['recordsets'][0].length > 0) {
-      return res.status(200).json({ "bvarvalue": records['recordsets'][0][0]['bvarvalue'] })
-    } else {
-      splittedValue = bvarid.split("-")
-      buildingSQL = "select campusname FROM [" + dbName + "].[ECCAnalytics].[Buildings]  where [buildingname] = '" + buildingName + "';"
-
-      records = await request.query(buildingSQL)
-      if (records['recordsets'][0].length < 1) {
-        return res.status(200).json('no data')
-
-      }
-      campusName = records['recordsets'][0][0]['campusname']
-
-      campusVarOpSQL = "select * FROM [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation]  where [campusname] = '" + campusName + "' and [cvarid] = '" + cvarid + "';"
-      campusVarOpRecords = await request.query(campusVarOpSQL)
-
-      if (campusVarOpRecords['recordsets'][0].length > 0) {
-        return res.status(200).json({ "cvarvalue": campusVarOpRecords['recordsets'][0][0]['cvarvalue'] })
-      } else {
-        return res.status(200).json('no data')
-      }
-
-    }
-  } catch (err) {
-    console.error('Error with SQL Server:', err);
-  } finally {
-    // Close the connection pool
-    pool.close();
-
-  }
-
-
-}
-
 /*************************************************** END OF TEST API************************************************* */
 
 
@@ -4514,19 +4111,16 @@ module.exports = {
   updateuserpassword,
   buildingvariable,
   campusvariable,
-  addbuildingvariable,
-  addcampusvariable,
-  equipmentvariable,
-  getequipmentvariable,
-  addequipmentvariableopration,
-  deleteequipmentvariableoperation,
-  retrieveequipmentvariable,
   addbuildingvariableoperation,
-  updatebuildingvariableoperation,
-  deletebuildingvariableoperation,
   addcampusvariableoperation,
+  addequipmentvariableopration,
+  updatequipmentvariableoperation,
+  updatebuildingvariableoperation,
   updatecampusvariableoperation,
+  deletebuildingvariableoperation,
   deletecampusvariableoperation,
-  getbuildingvariablevalue
+  equipmentvariable,
+  getbuildingvariablevalue,
+  test
 
 }
