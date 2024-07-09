@@ -176,7 +176,8 @@ const logout = async (req, res) => {
 
     var data = [];
     query = "update [" + dbName + "].ECCAnalytics.Users set [configloginstatus] = 0 where  username  COLLATE SQL_Latin1_General_CP1_CS_AS ='" + username + "';"
-    query += "update  [" + dbName + "].ECCAnalytics.UserLog set [logouttime] = CURRENT_TIMESTAMP where  username  COLLATE SQL_Latin1_General_CP1_CS_AS ='" + username + "' and [app] = 1 and logouttime IS NULL;"
+    query += "update  [" + dbName + "].ECCAnalytics.UserLog set [logouttime] = CURRENT_TIMESTAMP where  username  COLLATE SQL_Latin1_General_CP1_CS_AS ='" + username + "' and [app] = 1 and logouttime IS NULL and recordid = (SELECT TOP (1) [recordid] from  [" + dbName + "].[ECCAnalytics].[UserLog] where username COLLATE SQL_Latin1_General_CP1_CS_AS ='" + username + "' order by recordid desc);"
+    //update  [ECC_DEV].[ECCAnalytics].[UserLog] set app = 1 where username = 'Test' and recordid = (SELECT TOP (1) [recordid] from  [ECC_DEV].[ECCAnalytics].[UserLog] where username = 'Test' order by recordid desc)
     await request.query(query)
 
     console.log(query);
@@ -712,7 +713,7 @@ const deleteproject_6_7_2024 = (req, res) => {
 }
 
 
-const deleteproject = async (req, res) => {
+const deleteproject_8_7_2024 = async (req, res) => {
   console.log(req.originalUrl)
   dbName = config.databse
   const pool = new sql.ConnectionPool(config);
@@ -837,6 +838,180 @@ const deleteproject = async (req, res) => {
 
 
 
+}
+
+const deleteproject = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+  modifier = req.query.modifier
+  equipmentname = req.query.eq
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+    deleteproject_query = ""
+    if (typeof req.query.cn !== 'undefined') {
+      //query = " delete  FROM ["+dbName+"].[ECCAnalytics].[Project] where [countryname] = '"+req.query.cn+"'";
+
+      query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
+      //query = "select datapointid ,[devicerecordid] from   [ECC_DEV].[ECCAnalytics].[DataPoint] where devicerecordid in " 
+      query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "')); "
+      //return res.status(200).json(query)
+      query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "'); "
+
+      query3 = " delete  FROM [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "'";
+
+      deleteproject_query = query1 + query2 + query3;
+
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [countryname] = '" + req.query.cn + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for (count = 0; count < projectData['recordsets'][0].length; count++) {
+        equipmentName += projectData['recordsets'][0][count].equipmentname + ", "
+        projectRecordId += projectData['recordsets'][0][count].recordid + ", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
+
+    }
+
+    if (typeof req.query.ct !== 'undefined') {
+      //query = " delete  FROM ["+dbName+"].[ECCAnalytics].[Project] where [cityname] = '"+req.query.ct+"'";
+      //return res.status(200).json(query)
+
+      query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
+      //query = "select datapointid ,[devicerecordid] from   [ECC_DEV].[ECCAnalytics].[DataPoint] where devicerecordid in " 
+      query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "')); "
+      //return res.status(200).json(query)
+      query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "'); "
+
+      query3 = " delete  FROM [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "'";
+
+      deleteproject_query = query1 + query2 + query3;
+
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [cityname] = '" + req.query.ct + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for (count = 0; count < projectData['recordsets'][0].length; count++) {
+        equipmentName += projectData['recordsets'][0][count].equipmentname + ", "
+        projectRecordId += projectData['recordsets'][0][count].recordid + ", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
+
+
+    }
+
+    if (typeof req.query.cm !== 'undefined') {
+      //query = " delete  FROM ["+dbName+"].[ECCAnalytics].[Project] where [campusname] = '"+req.query.cm+"'";
+      //return res.status(200).json(query)
+
+      query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
+      //query = "select datapointid ,[devicerecordid] from   [ECC_DEV].[ECCAnalytics].[DataPoint] where devicerecordid in " 
+      query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "')); "
+      //return res.status(200).json(query)
+      query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "'); "
+
+      query3 = " delete  FROM [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "'";
+
+      deleteproject_query = query1 + query2 + query3;
+
+
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [campusname] = '" + req.query.cm + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for (count = 0; count < projectData['recordsets'][0].length; count++) {
+        equipmentName += projectData['recordsets'][0][count].equipmentname + ", "
+        projectRecordId += projectData['recordsets'][0][count].recordid + ", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
+
+    }
+
+    if (typeof req.query.bl !== 'undefined') {
+      //query = " delete  FROM ["+dbName+"].[ECCAnalytics].[Project] where [buildingname] = '"+req.query.bl+"'";
+      //return res.status(200).json(query)
+
+      query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
+      //query = "select datapointid ,[devicerecordid] from   [ECC_DEV].[ECCAnalytics].[DataPoint] where devicerecordid in " 
+      query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "')); "
+      //return res.status(200).json(query)
+      query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "'); "
+
+      query3 = " delete  FROM [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "'";
+
+      deleteproject_query = query1 + query2 + query3;
+
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [buildingname] = '" + req.query.bl + "'";
+      projectData = await request.query(projectDetailSQL)
+      equipmentName = ""
+      projectRecordId = ""
+      for (count = 0; count < projectData['recordsets'][0].length; count++) {
+        equipmentName += projectData['recordsets'][0][count].equipmentname + ", "
+        projectRecordId += projectData['recordsets'][0][count].recordid + ", "
+      }
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentName + "', '" + projectRecordId + "','delete',CURRENT_TIMESTAMP); "
+
+    }
+
+
+    if (typeof req.query.eq !== 'undefined') {
+      //query = " delete  FROM ["+dbName+"].[ECCAnalytics].[Project] where [equipmentname] = '"+req.query.eq+"'";
+      //return res.status(200).json(query)
+
+      query1 = "delete  FROM [" + dbName + "].[ECCAnalytics].[DataPoint] where devicerecordid in "
+      //query = "select datapointid ,[devicerecordid] from   [ECC_DEV].[ECCAnalytics].[DataPoint] where devicerecordid in " 
+      query1 += " (select recordid from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query1 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "')); "
+      //return res.status(200).json(query)
+      query2 = " delete from [" + dbName + "].[ECCAnalytics].devices where [equipmentname] in "
+      query2 += " (select equipmentname  from  [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "'); "
+
+      query3 = " delete  FROM [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "'";
+
+      deleteproject_query = query1 + query2 + query3;
+
+      projectDetailSQL = "select * from [" + dbName + "].[ECCAnalytics].[Project] where [equipmentname] = '" + req.query.eq + "'";
+      projectData = await request.query(projectDetailSQL)
+      projectrecordid = projectData['recordsets'][0][0].recordid
+      updateprojectaudit_query = " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + projectrecordid + "','delete',CURRENT_TIMESTAMP); "
+
+
+    }
+
+
+
+    //updateuser_query += " INSERT INTO [" + dbName + "].ECCAnalytics.ProjectAudit (modifier,equipmentname,projectrecordid,event,previousrecord,currentrecord,dated) VALUES ('" + modifier + "','" + equipmentname + "', '" + projectrecordid + "','delete','" + previousrecord + "', '" + currentrecord + "',CURRENT_TIMESTAMP); "
+    deleteproject_query += updateprojectaudit_query;
+    console.log(deleteproject_query)
+    //return 0
+    await request.query(deleteproject_query)
+
+    return res.status(200).json('success')
+
+  } catch (err) {
+    console.error(err);
+    console.error(deleteproject_query);
+    return res.status(500).json('failed');
+
+  } finally {
+
+    pool.close();
+
+
+  }
 }
 
 
@@ -2589,7 +2764,7 @@ const postdatapoint_7_6_2024 = (req, res) => {
 
 }
 
-const postdatapoint = async (req, res) => {
+const postdatapoint_8_7_2024 = async (req, res) => {
   console.log(req.originalUrl);
 
   function findValueIndex(array, value) {
@@ -2834,7 +3009,252 @@ const postdatapoint = async (req, res) => {
 }
 
 
+const postdatapoint = async (req, res) => {
+  console.log(req.originalUrl);
 
+  function findValueIndex(array, value) {
+    const index = array.indexOf(value);
+    return index !== -1 ? index : null;
+  }
+
+  dbName = config.databse
+
+  modifier = req.query.modifier
+  datapoint = req.body.datapoint
+  actualpoint = req.body.actualpoint
+  multiply = req.body.multiply
+  addition = req.body.addition
+  objtype = req.body.objtype
+  objinstance = req.body.objinstance
+  devicerecordid = req.body.devicerecordid
+
+  devices = req.body.devices
+  //deviceid = devices[0]['deviceid']
+
+
+  existingDeviceId = []
+  newDeviceId = []
+  newDeviceTblRecordId = []
+  existingDeviceRecordId = []
+
+  try {
+    await sql.connect(config)
+    var request = new sql.Request();
+
+    chkquery = "SELECT *  FROM ("
+    for (i = 0; i < devices.length; i++) {
+      if (i == devices.length - 1) {
+        chkquery += " SELECT * FROM [" + dbName + "].ECCAnalytics.Devices where equipmentname ='" + req.body.equipmentname + "' and deviceid = '" + devices[i]['deviceid'] + "' "
+      } else {
+        chkquery += " SELECT * FROM [" + dbName + "].ECCAnalytics.Devices where equipmentname ='" + req.body.equipmentname + "' and deviceid = '" + devices[i]['deviceid'] + "' UNION ALL "
+      }
+    }
+
+    chkquery += ") AS combined_results;"
+
+    //return 0
+
+    chkqueryrecords = await request.query(chkquery)
+    newRecordAdded = 0
+    console.log(chkqueryrecords)
+    //return 0
+
+    existingDeviceIdWithRecordId = {}
+    for (total = 0; total < chkqueryrecords['recordsets'][0].length; total++) {
+      val = chkqueryrecords['recordsets'][0][total].deviceid
+      existingDeviceId.push(chkqueryrecords['recordsets'][0][total].deviceid)
+      existingDeviceRecordId.push(chkqueryrecords['recordsets'][0][total].recordid)
+      existingDeviceIdWithRecordId[chkqueryrecords['recordsets'][0][total].deviceid] = chkqueryrecords['recordsets'][0][total].recordid;
+    }
+
+    console.log(existingDeviceIdWithRecordId)
+    //console.log(existingDeviceIdWithRecordId[2537082])
+    //return 0
+    insertQueryForNewDevice = ''
+    devicesAuditaddSQL = ""
+    for (i = 0; i < devices.length; i++) {
+      if (existingDeviceId.includes(devices[i]['deviceid']) != true) {
+        insertQueryForNewDevice += " insert into [" + dbName + "].ECCAnalytics.Devices (equipmentname, deviceid, ip, port, network, manufacturer,modelname) values  ('" + req.body.equipmentname + "', '" + devices[i]['deviceid'] + "', '" + devices[i]['ip'] + "', '" + devices[i]['port'] + "', '" + devices[i]['network'] + "', '" + devices[i]['manufacturer'] + "', '" + devices[i]['modelname'] + "');"
+        devicesAuditaddSQL += " insert into [" + dbName + "].ECCAnalytics.DevicesAudit (equipmentname, deviceid, modifier, event, currentrecord, dated) values  ('" + req.body.equipmentname + "', '" + devices[i]['deviceid'] + "', '" + modifier + "', 'add', '" + devices[i]['deviceid'] + "', CURRENT_TIMESTAMP); "
+        newRecordAdded += 1
+      }
+    }
+
+    console.log(insertQueryForNewDevice)
+
+    //sql.close()
+    //await sql.connect(config)
+
+    /******************************************************************************************************** */
+
+    if (newRecordAdded > 0) {
+      await request.query(insertQueryForNewDevice)
+      queryToPickLastAddedRecord = "select * from ( select TOP (" + newRecordAdded + ")  recordid, deviceid FROM [" + dbName + "].[ECCAnalytics].[Devices] where equipmentname = '" + req.body.equipmentname + "' order by recordid DESC) devices_tbl order by devices_tbl.recordid;"
+      console.log()
+      lastAddedRecord = await request.query(queryToPickLastAddedRecord)
+      console.log(lastAddedRecord)
+      for (total = 0; total < lastAddedRecord['recordsets'][0].length; total++) {
+        val = lastAddedRecord['recordsets'][0][total].deviceid
+        newDeviceId.push(lastAddedRecord['recordsets'][0][total].deviceid)
+        newDeviceTblRecordId.push(lastAddedRecord['recordsets'][0][total].recordid)
+      }
+
+      // }
+
+      console.log(newDeviceTblRecordId)
+
+
+      // Existing Device
+
+      DPAddQueryForOldDevice = ""
+
+
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (existingDeviceId.includes(devices[dvc]['deviceid']) == true) {// for already added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] == null) {
+              //arrayId = findValueIndex(newDeviceId, devices[dvc]['deviceid'])
+              DPAddQueryForOldDevice += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPoint ( deviceid, pointid,actualpoint,multiply,addition,dated,objtype,objinstance,devicerecordid,isenergyvalue) VALUES "
+              DPAddQueryForOldDevice += "('" + devices[dvc]['deviceid'] + "','" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + devices[dvc]['datapoint'][dp]['multiply'] + "','" + devices[dvc]['datapoint'][dp]['addition'] + "', CURRENT_TIMESTAMP, '" + devices[dvc]['datapoint'][dp]['objtype'] + "', '" + devices[dvc]['datapoint'][dp]['objinstance'] + "', " + existingDeviceIdWithRecordId[devices[dvc]['deviceid']] + ", '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "');"
+
+            }
+          }
+          //console.log(query3)
+
+        }
+      }
+
+      console.log(DPAddQueryForOldDevice)
+      await request.query(DPAddQueryForOldDevice)
+
+
+      //return 0
+      // Newly added Device
+
+
+      DPAddQueryForNewlyAddedDevice = ""
+
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (newDeviceId.includes(devices[dvc]['deviceid']) == true) {// for newly added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] == null) {
+              arrayId = findValueIndex(newDeviceId, devices[dvc]['deviceid'])
+              DPAddQueryForNewlyAddedDevice += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPoint ( deviceid, pointid,actualpoint,multiply,addition,dated,objtype,objinstance,devicerecordid,isenergyvalue) VALUES "
+              DPAddQueryForNewlyAddedDevice += "('" + devices[dvc]['deviceid'] + "','" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + devices[dvc]['datapoint'][dp]['multiply'] + "','" + devices[dvc]['datapoint'][dp]['addition'] + "', CURRENT_TIMESTAMP, '" + devices[dvc]['datapoint'][dp]['objtype'] + "', '" + devices[dvc]['datapoint'][dp]['objinstance'] + "', " + newDeviceTblRecordId[arrayId] + ", '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "');"
+
+            }
+          }
+          //console.log(query3)
+
+        }
+      }
+
+      await request.query(DPAddQueryForNewlyAddedDevice)
+
+
+      //For newly added device and update datapoint with existing datapoint
+
+      DPupdateQueryForNewlyAddedDevice = ""
+
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (newDeviceId.includes(devices[dvc]['deviceid']) == true) {// for newly added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] != null) {
+              arrayId = findValueIndex(newDeviceId, devices[dvc]['deviceid'])
+              //DPAddQueryForNewlyAddedDevice += " INSERT INTO ["+dbName+"].ECCAnalytics.DataPoint ( deviceid, pointid,actualpoint,multiply,addition,dated,objtype,objinstance,devicerecordid,isenergyvalue) VALUES "
+              //DPAddQueryForNewlyAddedDevice += "('"+devices[dvc]['deviceid']+"','"+devices[dvc]['datapoint'][dp]['pointid']+"','"+devices[dvc]['datapoint'][dp]['actualpoint']+"','"+devices[dvc]['datapoint'][dp]['multiply']+"','"+devices[dvc]['datapoint'][dp]['addition']+"', CURRENT_TIMESTAMP, '"+devices[dvc]['datapoint'][dp]['objtype']+"', '"+devices[dvc]['datapoint'][dp]['objinstance']+"', "+newDeviceTblRecordId[arrayId]+", '"+devices[dvc]['datapoint'][dp]['isenergyvalue']+"');"
+              DPupdateQueryForNewlyAddedDevice += " UPDATE [" + dbName + "].[ECCAnalytics].[DataPoint] SET  deviceid = '" + devices[dvc]['deviceid'] + "', pointid = '" + devices[dvc]['datapoint'][dp]['pointid'] + "',actualpoint = '" + devices[dvc]['datapoint'][dp]['actualpoint'] + "',multiply = '" + devices[dvc]['datapoint'][dp]['multiply'] + "', addition ='" + devices[dvc]['datapoint'][dp]['addition'] + "', objtype = '" + devices[dvc]['datapoint'][dp]['objtype'] + "',objinstance = '" + devices[dvc]['datapoint'][dp]['objinstance'] + "',devicerecordid = " + newDeviceTblRecordId[arrayId] + " ,isenergyvalue = '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "' where datapointid = " + devices[dvc]['datapoint'][dp]['datapointid'] + "; "
+
+            }
+          }
+          //console.log(query3)
+        }
+      }
+
+
+
+      await request.query(DPupdateQueryForNewlyAddedDevice)
+
+
+      // Update existing
+
+      DPupdateQueryForOldDevice = ""
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (existingDeviceId.includes(devices[dvc]['deviceid']) == true) {// for update of already added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] != null) {
+              //DPupdateQueryForOldDevice += " UPDATE ["+dbName+"].[ECCAnalytics].[DataPoint] SET  pointid = '"+devices[dvc]['datapoint'][dp]['pointid']+"',actualpoint = '"+devices[dvc]['datapoint'][dp]['actualpoint']+"',multiply = '"+devices[dvc]['datapoint'][dp]['multiply']+"', addition ='"+devices[dvc]['datapoint'][dp]['addition']+"', objtype = '"+devices[dvc]['datapoint'][dp]['objtype']+"',objinstance = '"+devices[dvc]['datapoint'][dp]['objinstance']+"',isenergyvalue = '"+devices[dvc]['datapoint'][dp]['isenergyvalue']+"' where datapointid = "+devices[dvc]['datapoint'][dp]['datapointid']+"; "
+              DPupdateQueryForOldDevice += " UPDATE [" + dbName + "].[ECCAnalytics].[DataPoint] SET deviceid = '" + devices[dvc]['deviceid'] + "',  pointid = '" + devices[dvc]['datapoint'][dp]['pointid'] + "',actualpoint = '" + devices[dvc]['datapoint'][dp]['actualpoint'] + "',multiply = '" + devices[dvc]['datapoint'][dp]['multiply'] + "', addition ='" + devices[dvc]['datapoint'][dp]['addition'] + "', objtype = '" + devices[dvc]['datapoint'][dp]['objtype'] + "',objinstance = '" + devices[dvc]['datapoint'][dp]['objinstance'] + "',devicerecordid = " + existingDeviceIdWithRecordId[devices[dvc]['deviceid']] + ",isenergyvalue = '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "' where datapointid = " + devices[dvc]['datapoint'][dp]['datapointid'] + "; "
+
+
+            }
+          }
+          //console.log(query3)
+
+        }
+      }
+      console.log(DPupdateQueryForOldDevice)
+
+      await request.query(DPupdateQueryForOldDevice)
+
+    } else {
+
+      DPAddQueryForOldDevice = ""
+
+
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (existingDeviceId.includes(devices[dvc]['deviceid']) == true) {// for already added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] == null) {
+              //arrayId = findValueIndex(newDeviceId, devices[dvc]['deviceid'])
+              DPAddQueryForOldDevice += " INSERT INTO [" + dbName + "].ECCAnalytics.DataPoint ( deviceid, pointid,actualpoint,multiply,addition,dated,objtype,objinstance,devicerecordid,isenergyvalue) VALUES "
+              DPAddQueryForOldDevice += "('" + devices[dvc]['deviceid'] + "','" + devices[dvc]['datapoint'][dp]['pointid'] + "','" + devices[dvc]['datapoint'][dp]['actualpoint'] + "','" + devices[dvc]['datapoint'][dp]['multiply'] + "','" + devices[dvc]['datapoint'][dp]['addition'] + "', CURRENT_TIMESTAMP, '" + devices[dvc]['datapoint'][dp]['objtype'] + "', '" + devices[dvc]['datapoint'][dp]['objinstance'] + "', " + existingDeviceIdWithRecordId[devices[dvc]['deviceid']] + ", '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "');"
+
+            }
+          }
+          //console.log(query3)
+
+        }
+      }
+      await request.query(DPAddQueryForOldDevice)
+
+
+      DPupdateQueryForOldDevice = ""
+      for (dvc = 0; dvc < devices.length; dvc++) {
+        if (existingDeviceId.includes(devices[dvc]['deviceid']) == true) {// for update of already added device id
+          for (dp = 0; dp < devices[dvc]['datapoint'].length; dp++) {
+            if (devices[dvc]['datapoint'][dp]['datapointid'] != null) {
+              //DPupdateQueryForOldDevice += " UPDATE ["+dbName+"].[ECCAnalytics].[DataPoint] SET  pointid = '"+devices[dvc]['datapoint'][dp]['pointid']+"',actualpoint = '"+devices[dvc]['datapoint'][dp]['actualpoint']+"',multiply = '"+devices[dvc]['datapoint'][dp]['multiply']+"', addition ='"+devices[dvc]['datapoint'][dp]['addition']+"', objtype = '"+devices[dvc]['datapoint'][dp]['objtype']+"',objinstance = '"+devices[dvc]['datapoint'][dp]['objinstance']+"',isenergyvalue = '"+devices[dvc]['datapoint'][dp]['isenergyvalue']+"' where datapointid = "+devices[dvc]['datapoint'][dp]['datapointid']+"; "
+              DPupdateQueryForOldDevice += " UPDATE [" + dbName + "].[ECCAnalytics].[DataPoint] SET deviceid = '" + devices[dvc]['deviceid'] + "',  pointid = '" + devices[dvc]['datapoint'][dp]['pointid'] + "',actualpoint = '" + devices[dvc]['datapoint'][dp]['actualpoint'] + "',multiply = '" + devices[dvc]['datapoint'][dp]['multiply'] + "', addition ='" + devices[dvc]['datapoint'][dp]['addition'] + "', objtype = '" + devices[dvc]['datapoint'][dp]['objtype'] + "',objinstance = '" + devices[dvc]['datapoint'][dp]['objinstance'] + "',isenergyvalue = '" + devices[dvc]['datapoint'][dp]['isenergyvalue'] + "' where datapointid = " + devices[dvc]['datapoint'][dp]['datapointid'] + "; "
+
+            }
+          }
+          //console.log(query3)
+
+        }
+      }
+
+      await request.query(DPupdateQueryForOldDevice)
+
+
+    }
+    return res.status(200).json('success');
+
+
+  } //end try block
+
+
+
+
+  catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal Server Error' });
+
+  }
+
+
+
+}
 
 
 
@@ -2991,7 +3411,7 @@ const equipmentlist = async (req, res) => {
 
   dbName = config.databse
 
-  eqp = req.query.eqp
+ // eqp = req.query.eqp
 
 
   try {

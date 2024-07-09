@@ -927,7 +927,7 @@ const avgdatapointvalue = (req,res)=>{
 
 
 
-const avgdpval = (req,res)=>{
+const avgdpval_9_7_2024 = (req,res)=>{
 
 
     // const currentDateTime = getCurrentDateTime()
@@ -1037,7 +1037,69 @@ query2 += " where [DV].equipmentname='"+equipmentname+"' and [DP].[isenergyvalue
    })
 }
 
-
+const avgdpval = async(req, res) => {
+    console.log(req.originalUrl)
+    dbName = config.databse
+    const pool = new sql.ConnectionPool(config);
+  
+    var equipmentname = req.query.equipmentname;
+    var dt = req.query.dt;
+    //var datapoint = req.query.datapoint;
+  
+    try {
+      await pool.connect();
+      const request = pool.request();
+  
+      var data = [];
+      firstAvgSQL = "SELECT [datapointvalue]  FROM [" + dbName + "].[ECCAnalytics].[DataPointValue] DPV "
+      firstAvgSQL += " left Join [" + dbName + "].[ECCAnalytics].[DataPoint] DP on DPV.[pointid] = DP.[pointid]  and DPV.[datapointid] = DP.[datapointid]  "
+      firstAvgSQL += " inner JOIN  [" + dbName + "].[ECCAnalytics].[Devices] DV  "
+      firstAvgSQL += " on DV.deviceid = DP.deviceid and [DV].recordid = [DP].devicerecordid "
+      firstAvgSQL += " where [DV].equipmentname='" + equipmentname + "' and [DP].[isenergyvalue] = 1 and FORMAT(DPV.dated,'dd-MM-yyyy HH:mm:ss') >'" + dt + "'"
+      firstAvgQueryResult = await request.query(firstAvgSQL)
+  
+      if (firstAvgQueryResult['recordsets'][0].length > 0) {
+        val = firstAvgQueryResult['recordsets'][0][lngth - 1].datapointvalue - firstAvgQueryResult['recordsets'][0][0].datapointvalue
+        return res.status(200).json({ "value": val, "isENGVal": "1" })
+      } else {
+        evarvalOfEngValOneSQL = "SELECT [evarvalue] from  [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where equipmentname = '" + equipmentname + "' and isenergyvalue = 1; "
+        evarvalOfEngValOneSQLResult = await request.query(evarvalOfEngValOneSQL)
+  
+        if (evarvalOfEngValOneSQLResult['recordsets'][0].length > 0) {
+          return res.status(200).json({ "evarvalue": evarvalOfEngValOneSQLResult['recordsets'][0][0].evarvalue })
+  
+        } else {
+          var secondAvgSQL = "SELECT AVG(convert(float,DPV.[datapointvalue])) as avg FROM [" + dbName + "].[ECCAnalytics].[DataPointValue] DPV "
+          secondAvgSQL += " left Join [" + dbName + "].[ECCAnalytics].[DataPoint] DP on DPV.[pointid] = DP.[pointid]  and DPV.[datapointid] = DP.[datapointid]  "
+          secondAvgSQL += " inner JOIN  [" + dbName + "].[ECCAnalytics].[Devices] DV  "
+          secondAvgSQL += " on DV.deviceid = DP.deviceid and [DV].recordid = [DP].devicerecordid "
+          secondAvgSQL += " where [DV].equipmentname='" + equipmentname + "' and [DP].[isenergyvalue] = 2 and FORMAT(DPV.dated,'dd-MM-yyyy HH:mm:ss') >'" + dt + "'"
+          secondAvgQueryResult = await request.query(secondAvgSQL)
+          if (secondAvgQueryResult['recordsets'][0].length > 0) {
+            return res.status(200).json({ "value": secondAvgQueryResult['recordsets'][0][0].avg, "isENGVal": "2" })
+          }else{
+            evarvalOfEngValTwoSQL = "SELECT [evarvalue] from  [" + dbName + "].[ECCAnalytics].[EquipmentVariables_Operation] where equipmentname = '" + equipmentname + "' and isenergyvalue = 2; "
+            evarvalOfEngValTwoResult = await request.query(evarvalOfEngValTwoSQL)
+            if (evarvalOfEngValTwoResult['recordsets'][0].length > 0) {
+              return res.status(200).json({ "evarvalue": evarvalOfEngValTwoResult['recordsets'][0][0].evarvalue })
+      
+            } else{
+              return res.status(200).json('No data found')
+  
+            }
+  
+          }
+  
+          }
+        }
+      } catch (err) {
+        console.error('Error with SQL Server:', err);
+      } finally {
+        // Close the connection pool
+        pool.close();
+      }
+    }
+  
 
 
 const closetask = (req,res)=>{
@@ -1399,7 +1461,8 @@ const dashboardlogin = (req,res)=>{
        //query = "SELECT [userid],[username],[roles],[useremailid],[pswd],[loginstatus] FROM ["+dbName+"].[ECCAnalytics].Users"
       // query = "update ["+dbName+"].ECCAnalytics.Users set [loginstatus] = 0 where  username ='"+username+ "';"
        query = "update ["+dbName+"].ECCAnalytics.Users set [analyticloginstatus] = 0 where  username ='"+username+ "';"
-       query += "update  ["+dbName+"].ECCAnalytics.UserLog set [logouttime] = CURRENT_TIMESTAMP where  username ='"+username+"' and logouttime IS NULL;"
+       //query += "update  ["+dbName+"].ECCAnalytics.UserLog set [logouttime] = CURRENT_TIMESTAMP where  username ='"+username+"' and logouttime IS NULL;"
+       query += "update  [" + dbName + "].ECCAnalytics.UserLog set [logouttime] = CURRENT_TIMESTAMP where  username  COLLATE SQL_Latin1_General_CP1_CS_AS ='" + username + "' and [app] = 2 and logouttime IS NULL and recordid = (SELECT TOP (1) [recordid] from  [" + dbName + "].[ECCAnalytics].[UserLog] where username COLLATE SQL_Latin1_General_CP1_CS_AS ='" + username + "' order by recordid desc);"
   
         request.query(query,function(err,records){
             if(err)
@@ -1413,6 +1476,58 @@ const dashboardlogin = (req,res)=>{
     )
     })
   }
+
+
+  const getbuildingvariablevalue = async (req, res) => {
+
+    console.log(req.originalUrl)
+    dbName = config.databse
+    const pool = new sql.ConnectionPool(config);
+  
+    try {
+      await pool.connect();
+      const request = pool.request();
+  
+      buildingName = req.query.buildingname
+      bvarid = req.query.bvarid
+      cvarid = 'CVAR-' + bvarid.split("-")[1]
+      BVOTableSQL = "select * FROM [" + dbName + "].[ECCAnalytics].[BuildingVariables_Operation]  where [buildingname] = '" + buildingName + "' and [bvarid] = '" + bvarid + "';"
+      records = await request.query(BVOTableSQL)
+      if (records['recordsets'][0].length > 0) {
+        return res.status(200).json({ "bvarvalue": records['recordsets'][0][0]['bvarvalue'] })
+      } else {
+        splittedValue = bvarid.split("-")
+        buildingSQL = "select campusname FROM [" + dbName + "].[ECCAnalytics].[Buildings]  where [buildingname] = '" + buildingName + "';"
+  
+        records = await request.query(buildingSQL)
+        if (records['recordsets'][0].length < 1) {
+          return res.status(200).json('no data')
+  
+        }
+        campusName = records['recordsets'][0][0]['campusname']
+  
+        campusVarOpSQL = "select * FROM [" + dbName + "].[ECCAnalytics].[CampusVariables_Operation]  where [campusname] = '" + campusName + "' and [cvarid] = '" + cvarid + "';"
+        campusVarOpRecords = await request.query(campusVarOpSQL)
+  
+        if (campusVarOpRecords['recordsets'][0].length > 0) {
+          return res.status(200).json({ "cvarvalue": campusVarOpRecords['recordsets'][0][0]['cvarvalue'] })
+        } else {
+          return res.status(200).json('no data')
+        }
+  
+      }
+    } catch (err) {
+      console.error('Error with SQL Server:', err);
+    } finally {
+      // Close the connection pool
+      pool.close();
+  
+    }
+  
+  
+  }
+
+
 
 /*********************************************TEST API ********************************************************* */
 const test = (req,res)=>{
@@ -1470,6 +1585,7 @@ module.exports = {
     dashboardlogin,
     dashboardlogout,
     avgdpval,
+    getbuildingvariablevalue,
     test
     
 }
