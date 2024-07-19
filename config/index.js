@@ -1,10 +1,12 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const sql = require('mssql/msnodesqlv8');
+const morgan = require('morgan')
 
 var cors = require('cors') // This is better than using header
 var port = require('./const');
-
+const swStats = require('swagger-stats');
+//const apiSpec = require('swagger.json');
 
 const anaRoutes = require('./routes/configscreen');
 
@@ -15,6 +17,7 @@ const app = express();
 
 
 
+//app.use(swStats.getMiddleware({swaggerSpec:apiSpec}));
 
 console.log('This is our node app');
 
@@ -22,7 +25,7 @@ console.log('This is our node app');
 app.use(bodyParser.json()); // application/json
 
 app.use(cors());
-
+app.use(morgan('tiny'))
 
 //app.use(userRoutes);
 
