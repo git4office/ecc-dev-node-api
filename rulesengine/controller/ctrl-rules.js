@@ -352,19 +352,26 @@ const totaldatapoints = (req, res) => {
 
 
 
-const postdatapointvalue = (req, res) => {
+const postdatapointvalue_29_7_2024 = (req, res) => {
   console.log(req.originalUrl);
 
   //  dic =  req.body.ruleid
 
   //for (const dic of req.body) { console.log(x); }
   qry2Values = ""
+  //sqlPart = ""
   //sql = "" 
   count = 0
+  sqlPart = 1
   for (const dic of req.body.data) {
+    count++;
     //qry2Values+="('"+dic['datapointid']+"', '"+dic['deviceid']+"', '"+dic['datapoint']+"', '"+dic['datapointvalue']+"', CURRENT_TIMESTAMP,'"+dic['units']+"'),"
     qry2Values += "('" + dic['datapointid'] + "', '" + dic['deviceid'] + "', '" + dic['pointid'] + "','" + dic['datapointvalue'] + "', CURRENT_TIMESTAMP),"
-    //console.log(x); 
+    if (count > 900) {
+      //"sqlPart"+count = qry2Values
+    }
+    console.log("sqlPart" + count);
+    return
   }
 
   var qry = "INSERT INTO [" + dbName + "].[ECCAnalytics].DataPointValue ( datapointid,deviceid,pointid,datapointvalue,dated) VALUES " + qry2Values
@@ -389,6 +396,53 @@ const postdatapointvalue = (req, res) => {
   })
 
 }
+
+
+const postdatapointvalue = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+    qry2Values = ""
+    count = 0
+    sqlPart = 1
+    for (const dic of req.body.data) {
+      count++;
+      //qry2Values+="('"+dic['datapointid']+"', '"+dic['deviceid']+"', '"+dic['datapoint']+"', '"+dic['datapointvalue']+"', CURRENT_TIMESTAMP,'"+dic['units']+"'),"
+      qry2Values += "('" + dic['datapointid'] + "', '" + dic['deviceid'] + "', '" + dic['pointid'] + "','" + dic['datapointvalue'] + "', CURRENT_TIMESTAMP),"
+      if (count >= 900) {
+        var qry = "INSERT INTO [" + dbName + "].[ECCAnalytics].DataPointValue ( datapointid,deviceid,pointid,datapointvalue,dated) VALUES " + qry2Values
+
+        qry = qry.substring(0, qry.length - 1);
+        await request.query(qry)
+        qry2Values = ""
+
+      }else{
+        var qry = "INSERT INTO [" + dbName + "].[ECCAnalytics].DataPointValue ( datapointid,deviceid,pointid,datapointvalue,dated) VALUES " + qry2Values
+
+        qry = qry.substring(0, qry.length - 1);
+        await request.query(qry)
+        qry2Values = ""
+
+      }
+
+    }
+
+
+    return res.status(200).json({ 'status': 'success' })
+  } catch (err) {
+    console.error('Error with SQL Server:', err);
+  } finally {
+    // Close the connection pool
+    pool.close();
+  }
+
+}
+
 
 
 /*888888888********/
@@ -652,38 +706,36 @@ const addrules = (req, res) => {
 
 
 
-const getinputdatapointvalue = (req, res) => {
-  console.log(req.originalUrl);
-
+const getinputdatapointvalue = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
   // var num = "100";
   if (typeof req.query.num !== 'undefined')
     num = req.query.num;
 
 
-  sql.connect(config, function (err) {
-    if (err) conole.log(err)
+  try {
+    await pool.connect();
+    const request = pool.request();
 
-    // make a request as
+    queryForTotalSQL = "SELECT count(*) as total FROM [" + dbName + "].[ECCAnalytics].DataPoint WHERE DATEDIFF(HOUR, dated, GETDATE()) > 24;"
+    records = await request.query(queryForTotalSQL)
+    total = records['recordsets'][0][0]['total']
 
-    var request = new sql.Request();
+    query = "SELECT TOP (" + total + ") datapointrecordid,datapointid,deviceid,pointid,datapointvalue,dated FROM [" + dbName + "].[ECCAnalytics].DataPointValue ORDER BY dated DESC;"
+    records = await request.query(query)
 
-    //query = "SELECT TOP "+num + " datapointid,deviceid,datapoint,datapointvalue,dated FROM ["+dbName+"].[ECCAnalytics].DataPointValue ORDER BY dated DESC;"
-    // IN the new table datapoint column has been removed so following query is being used.
-    //query = "SELECT TOP "+num + " datapointid,deviceid,datapointvalue,dated FROM ["+dbName+"].[ECCAnalytics].DataPointValue ORDER BY dated DESC;"
-    query = "SELECT TOP (SELECT count(*) FROM [" + dbName + "].[ECCAnalytics].DataPoint WHERE DATEDIFF(HOUR, dated, GETDATE()) > 24) datapointrecordid,datapointid,deviceid,pointid,datapointvalue,dated FROM [" + dbName + "].[ECCAnalytics].DataPointValue ORDER BY dated DESC;"
-    request.query(query, function (err, records) {
-      if (err)
-        console.log(err);
-      else {
+    return res.status(200).json(records['recordsets'][0])
+  } catch (err) {
+    console.error('Error with SQL Server:', err);
+  } finally {
+    // Close the connection pool
+    pool.close();
+  }
 
-        return res.status(200).json(records['recordsets'][0])
-      }
-
-    }
-
-    )
-  })
 }
+
 
 
 
@@ -1279,6 +1331,143 @@ const geteqvariablesforrulesengine = async (req, res) => {
 }
 
 
+const devicestatus = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+  try {
+    await pool.connect();
+    const request = pool.request();
+
+    eqpname = req.query.eqpname
+    // query = "SELECT DV.[equipmentname],[deviceid],[ip],[countryname],[campusname] FROM [" + dbName + "].[ECCAnalytics].Devices DV left join [" + dbName + "].[ECCAnalytics].project PJ on DV.equipmentname = PJ.equipmentname " 
+    query = " select distinct tbl1.deviceid,tbl1.dated,tbl2.ip,tbl2.countryname,tbl2.campusname from (SELECT  DV.[deviceid],max(DP.dated) dated FROM [" + dbName + "].[ECCAnalytics].Devices DV "
+    query += " LEFT JOIN [" + dbName + "].[ECCAnalytics].DataPointValue DP "
+    query += " ON DV.deviceid = DP.deviceid group by DV.deviceid) tbl1 LEFT JOIN (SELECT distinct DV.[deviceid],[ip],[countryname],[campusname] FROM [" + dbName + "].[ECCAnalytics].Devices DV "
+    query += " left join [" + dbName + "].[ECCAnalytics].project PJ on DV.equipmentname = PJ.equipmentname) tbl2 "
+    query += " on tbl1.deviceid = tbl2.deviceid; "
+    console.log(query)
+    // DATEDIFF(HOUR, dated, GETDATE()) > 24"
+    records = await request.query(query)
+
+    return res.status(200).json(records['recordsets'][0])
+  } catch (err) {
+    console.error('Error with SQL Server:', err);
+  } finally {
+    // Close the connection pool
+    pool.close();
+  }
+
+}
+
+
+const alarmescalationmatrix1 = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+
+  try {
+
+    await pool.connect();
+
+    const request = pool.request();
+
+    location = req.query.lc
+
+    query = "SELECT  [escalation1 (IF Alarm Not Rectified Within 3 Days)] FROM  [" + dbName + "].[ECCAnalytics].[AlarmEscalationMatrix1] where [AlarmEscalationMatrix1].[location] = '" + location + "';"
+
+    records = await request.query(query)
+
+    return res.status(200).json(records['recordsets'][0])
+
+
+  } catch (err) {
+
+    console.error('Error with SQL Server:', err);
+
+  } finally {
+
+    // Close the connection pool
+
+    pool.close();
+  }
+
+
+}
+
+const alarmescalationmatrix2 = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+
+  try {
+
+    await pool.connect();
+
+    const request = pool.request();
+
+    location = req.query.lc
+
+    query = "SELECT  [escalation2 (IF Alarm Not Rectified Within 5 Days)] FROM  [" + dbName + "].[ECCAnalytics].[AlarmEscalationMatrix2] where [AlarmEscalationMatrix2].[location] = '" + location + "';"
+
+    records = await request.query(query)
+
+    return res.status(200).json(records['recordsets'][0])
+
+
+  } catch (err) {
+
+    console.error('Error with SQL Server:', err);
+
+  } finally {
+
+    // Close the connection pool
+
+    pool.close();
+  }
+
+
+}
+
+
+const alarmescalationmatrix3 = async (req, res) => {
+  console.log(req.originalUrl)
+  dbName = config.databse
+  const pool = new sql.ConnectionPool(config);
+
+
+  try {
+
+    await pool.connect();
+
+    const request = pool.request();
+
+    location = req.query.lc
+
+    query = "SELECT  [escalation3 (IF Alarm Not Rectified Within 7 Days)] FROM  [" + dbName + "].[ECCAnalytics].[AlarmEscalationMatrix3] where [AlarmEscalationMatrix3].[location] = '" + location + "';"
+
+    records = await request.query(query)
+
+    return res.status(200).json(records['recordsets'][0])
+
+
+  } catch (err) {
+
+    console.error('Error with SQL Server:', err);
+
+  } finally {
+
+    // Close the connection pool
+
+    pool.close();
+  }
+
+
+}
+
 /********************************************************************************************************************* */
 module.exports = {
 
@@ -1303,7 +1492,11 @@ module.exports = {
   getruletimerrecord,
   updateallruletimerrecord,
   getdatapointsforrulesengine,
-  geteqvariablesforrulesengine
+  geteqvariablesforrulesengine,
+  devicestatus,
+  alarmescalationmatrix1,
+  alarmescalationmatrix2,
+  alarmescalationmatrix3
 
 
 }

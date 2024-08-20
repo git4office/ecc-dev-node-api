@@ -4,7 +4,7 @@ const sql = require('mssql/msnodesqlv8');
 const router = express.Router();
 const {tasklist,taskDetailsByAlarmId,alarmdata,test,alarmfilterdata,closealarm,addtask,taskfilterdata,cityforcombo,campusforcombo,buildingforcombo,countryforcombo,citycampus,avgdatapointvalue,closetask,buildingname,equipmentname,email,addalarmdata}  = require('../controller/ctrl-ana');
 const {getcalculation,dashboardlogin,dashboardlogout,avgdpval}  = require('../controller/ctrl-ana');
-const {getbuildingvariablevalue} = require('../controller/ctrl-ana');
+const {getbuildingvariablevalue,devicestatus,escalationalarm} = require('../controller/ctrl-ana');
 
 
 
@@ -32,6 +32,8 @@ router.post('/ecc/v1/dashboardlogin',dashboardlogin)
 router.get('/ecc/v1/dashboardlogout',dashboardlogout)
 router.get('/ecc/v1/avgdpval',avgdpval)
 router.get('/ecc/v1/getbuildingvariablevalue',getbuildingvariablevalue)
+router.get('/ecc/v1/devicestatus',devicestatus)
+router.get('/ecc/v1/escalationalarm',escalationalarm)
 
 
 

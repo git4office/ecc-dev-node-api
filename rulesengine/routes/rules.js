@@ -8,7 +8,10 @@ const {createtimerrecord,getpointdescription}  = require('../controller/ctrl-rul
 const {getruletimerrecord} = require('../controller/ctrl-rules');
 const {updateallruletimerrecord} = require('../controller/ctrl-rules');
 const {getdatapointsforrulesengine} = require('../controller/ctrl-rules');
-const {geteqvariablesforrulesengine} = require('../controller/ctrl-rules');
+const {geteqvariablesforrulesengine,devicestatus} = require('../controller/ctrl-rules');
+const {alarmescalationmatrix1} = require('../controller/ctrl-rules');
+const {alarmescalationmatrix2} = require('../controller/ctrl-rules');
+const {alarmescalationmatrix3} = require('../controller/ctrl-rules');
 
 
 const urlPart = '/ecc/v1/'
@@ -34,6 +37,10 @@ router.get('/ecc/v1/getruletimerrecord',getruletimerrecord)
 router.post('/ecc/v1/updateallruletimerrecord',updateallruletimerrecord)
 router.get('/ecc/v1/getdatapointsforrulesengine',getdatapointsforrulesengine)
 router.get('/ecc/v1/geteqvariablesforrulesengine',geteqvariablesforrulesengine)
+router.get('/ecc/v1/devicestatus',devicestatus)
+router.get('/ecc/v1/alarmescalationmatrix1',alarmescalationmatrix1)
+router.get('/ecc/v1/alarmescalationmatrix2',alarmescalationmatrix2)
+router.get('/ecc/v1/alarmescalationmatrix3',alarmescalationmatrix3)
 
 
 //router.get('/ecc/v1/updatetask',updatetask)
